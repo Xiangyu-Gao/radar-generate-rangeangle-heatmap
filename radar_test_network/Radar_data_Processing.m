@@ -44,7 +44,7 @@ frame_end = 900;
 option = 0; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
             % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
 IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap 
-IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
+IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 0;% 1==> Windowing before doing angle fft
 num_stored_figs = 50;% the number of figures that are going to be stored
