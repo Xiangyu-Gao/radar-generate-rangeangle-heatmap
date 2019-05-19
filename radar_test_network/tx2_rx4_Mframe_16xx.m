@@ -10,11 +10,11 @@ Rx = 4;
 Tx = 2;
 
 % file information and frame information
-file_location = 'radar_data_20190207';
+file_location = 'radar_data_20190510';
 data_name = '0423';
 frame_start = 2;
 frame_end = 129;
-option = 0; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
+option = 2; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
             % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
 IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap 
 IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
@@ -175,7 +175,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
                     [Angdata] = Normalize(Angdata);
                     % save range-angle heatmap to .mat file
                     saved_file_name = strcat(saved_folder_name,'/',data_name,'_',num2str(i-frame_start,'%06d'),'.mat');
-                    eval(['save(saved_file_name,''Angdata'');'])
+                    eval(['save(saved_file_name,''Angdata'',''-v6'');'])
                     
                     if i < frame_start + num_stored_figs % plot rectangle
                         posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
@@ -272,7 +272,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
                 [Angdata_merge] = Normalize(Angdata_merge);
                 % save range-angle heatmap to .mat file
                 saved_file_name = strcat(saved_folder_name,'/',data_name,'_',num2str(i-frame_start,'%06d'),'.mat');
-                eval(['save(saved_file_name,''Angdata_merge'');'])
+                eval(['save(saved_file_name,''Angdata_merge'',''-v6'');'])
 
                 if i < frame_start + num_stored_figs % plot rectangle
                     posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
@@ -293,7 +293,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
             if i > frame_start-1
                 saved_file_name = strcat(data_name,'_',num2str(i,'%03d'),'.mat');
                 Xcube_chirp = [Xcube_chirp1,Xcube_chirp2];
-                eval(['save(saved_file_name,''Xcube_chirp'');']);
+                eval(['save(saved_file_name,''Xcube_chirp'',''-v6'');']);
             else
             end
         end

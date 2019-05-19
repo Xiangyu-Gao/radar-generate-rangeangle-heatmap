@@ -44,15 +44,15 @@ frame_end = 900;
 option = 0; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
             % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
 IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap 
-IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
+IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
-Is_Windowed = 0;% 1==> Windowing before doing angle fft
-num_stored_figs = 50;% the number of figures that are going to be stored
+Is_Windowed = 1;% 1==> Windowing before doing angle fft
+num_stored_figs = 900;% the number of figures that are going to be stored
 cali_n = 3; % the number of range bins that need to be calibrated
 neidop_n = 3; % the number of neighbored bins around the selected the doppler 
 
 %% file information
-capture_date = 'radar_data_20190409';
+capture_date = 'radar_data_20190510';
 
 
 folder_location = strcat('/mnt/disk1/RAW RADAR DATA/',capture_date);
@@ -60,10 +60,9 @@ folder_location = strcat('/mnt/disk1/RAW RADAR DATA/',capture_date);
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-for inum = 13:14
+for inum = 4:9
     
     file_name = files(inum).name;
-    %file_name = '2019_04_09_pms2000';
     % generate file name and folder
     file_location = strcat(folder_location,'/',file_name,'/rad_reo_zerf/adc_data_0.bin');
     for ign = 1:1
@@ -195,7 +194,7 @@ for inum = 13:14
                 [Angdata] = Normalize(Angdata);
                 % save range-angle heatmap to .mat file
                 saved_file_name = strcat(saved_folder_name,'/',file_name,'_',num2str(i-frame_start,'%06d'),'.mat');
-                eval(['save(saved_file_name,''Angdata'');'])
+                eval(['save(saved_file_name,''Angdata'',''-v6'');'])
 
                 if i < frame_start + num_stored_figs % plot rectangle
                     posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
@@ -292,7 +291,7 @@ for inum = 13:14
             [Angdata_merge] = Normalize(Angdata_merge);
             % save range-angle heatmap to .mat file
             saved_file_name = strcat(saved_folder_name,'/',data_name,'_',num2str(i-frame_start,'%06d'),'.mat');
-            eval(['save(saved_file_name,''Angdata_merge'');'])
+            eval(['save(saved_file_name,''Angdata_merge'',''-v6'');'])
 
             if i < frame_start + num_stored_figs % plot rectangle
                 posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
@@ -313,7 +312,7 @@ for inum = 13:14
         if i > frame_start-1
             saved_file_name = strcat(data_name,'_',num2str(i,'%03d'),'.mat');
             Xcube_chirp = [Xcube_chirp1,Xcube_chirp2];
-            eval(['save(saved_file_name,''Xcube_chirp'');']);
+            eval(['save(saved_file_name,''Xcube_chirp'',''-v6'');']);
         else
         end
     end

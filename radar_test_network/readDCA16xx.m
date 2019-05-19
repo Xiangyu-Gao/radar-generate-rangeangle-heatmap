@@ -24,7 +24,9 @@ end
 fclose(fid);
 %% organize data by LVDS lane
 % reshape data based on four samples per LVDS lane
-adcData = reshape(adcData, numLanes*4, []);
+len_total = length(adcData);
+fix_adc_len = len_total - rem(len_total, numLanes*4);
+adcData = reshape(adcData(1:fix_adc_len), numLanes*4, []);
 % for real only data
 if isReal
 %each LVDS lane contains two samples from each RX

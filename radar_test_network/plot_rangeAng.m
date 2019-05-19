@@ -31,8 +31,8 @@ for i=1:1
     xlabel('Angle of arrive(degrees)')
     ylabel('Range(meters)')
     colorbar
-    caxis([0,0.6])
-    %caxis([1.0e+14*0.0000,1.0e+15*7.8229])
+%     caxis([0,0.6])
+%     caxis([1.0e+14*0.0000,1.0e+15*7.8229])
     title('Range-Angle heatmap')
     
 end

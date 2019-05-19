@@ -19,11 +19,11 @@ fft_Rang = 128;
 fft_Vel = 256;
 fft_Ang = 91;
 
-folder_name = 'D:/tmp/0104/DATA'
-data_name = '0104'
+folder_name = '/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/radar_data_20190409/2019_04_09_bms1002/DATA'
+data_name = '2019_04_09_bms1002'
 
 % read text(neural network result)
-Results = dlmread('0104_iter10.txt');
+Results = readmatrix('bms1002_iter30.txt','Delimiter',',');
 Results(:,1) = Results(:,1)*2;
 Results(:,2) = floor(Results(:,2)*91/44);
 
@@ -42,7 +42,7 @@ for ig = 1:1
     % vel_grid=3.6*vel_grid;        % unit: km/h
 end
 
-start_frame = 88;
+start_frame = 0;
 end_frame = length(Results)-1;
 % end_frame = 50;
 
@@ -60,16 +60,15 @@ for i = start_frame:end_frame
     elseif Results(i+1,3) == 2   
         txt = 'cyclist';
     elseif Results(i+1,3) == -1
-        saved_fig_file_name = strcat('D:/tmp/demo_figure/',data_name,'/',data_name,'_',num2str(i,'%3d'));
+        saved_fig_file_name = strcat('/home/admin-cmmb/Desktop/demo_figure/',data_name,'/',data_name,'_',num2str(i,'%3d'));
         eval(['saveas(axh,saved_fig_file_name,''png'');'])
         close
         continue
     else
     end
-    filledCircle([agl_grid(1,Results(i+1,2))-15,rng_grid(Results(i+1,1),1)],0.5,1000,'r'); 
-    text(agl_grid(1,Results(i+1,2))+5-15,rng_grid(Results(i+1,1),1)+1,1,txt,'Color','r')
-    saved_fig_file_name = strcat('D:/tmp/demo_figure/',data_name,'/',data_name,'_',num2str(i,'%3d'));
+    filledCircle([agl_grid(1,Results(i+1,2)),rng_grid(Results(i+1,1),1)],0.5,1000,'r'); 
+    text(agl_grid(1,Results(i+1,2))+5,rng_grid(Results(i+1,1),1)+1,1,txt,'Color','r')
+    saved_fig_file_name = strcat('/home/admin-cmmb/Desktop/demo_figure/',data_name,'/',data_name,'_',num2str(i,'%3d'));
     eval(['saveas(axh,saved_fig_file_name,''png'');'])
     close
-    i
 end
