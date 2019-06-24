@@ -10,7 +10,7 @@ end
 Sum_data = sum(abs(Angdata),3); % sum the magnitude of all chirps
 
 if IS_Find_Init_Pos % IS_Find_Init_Pos=1 ==>find the initial object position in Range-Angle heatmap
-    ran_avoid_width = 5;
+    ran_avoid_width = 15;
     ran_min = ran_avoid_width;
     ran_max = Nr-ran_avoid_width;
     ang_min = 1;

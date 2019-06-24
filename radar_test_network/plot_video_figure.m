@@ -19,6 +19,13 @@ fft_Rang = 128;
 fft_Vel = 256;
 fft_Ang = 91;
 
+<<<<<<< HEAD
+folder_name = 'D:/tmp/2019_05_10_cc000/DATA'
+data_name = '2019_05_10_cc000'
+
+%read text(neural network result)
+%Results = dlmread('D:\tmp\2019_04_09_bms1000_iter10.txt');
+=======
 folder_name = '/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/radar_data_20190409/2019_04_09_bms1002/DATA'
 data_name = '2019_04_09_bms1002'
 
@@ -26,6 +33,7 @@ data_name = '2019_04_09_bms1002'
 Results = readmatrix('bms1002_iter30.txt','Delimiter',',');
 Results(:,1) = Results(:,1)*2;
 Results(:,2) = floor(Results(:,2)*91/44);
+>>>>>>> 25cc2d5e751d06b0021e211d61c6d2f04cea6773
 
 % Creat grid table
 for ig = 1:1
@@ -43,15 +51,55 @@ for ig = 1:1
 end
 
 start_frame = 0;
+<<<<<<< HEAD
+% end_frame = length(Results)-1;
+end_frame = 5;
+=======
 end_frame = length(Results)-1;
 % end_frame = 50;
+>>>>>>> 25cc2d5e751d06b0021e211d61c6d2f04cea6773
 
-for i = start_frame:end_frame
+for i = start_frame:1:end_frame
     file_name = strcat(folder_name,'/',data_name,'_',num2str(i,'%06d'),'.mat');
     tempdata = load(file_name);
     heatmap = tempdata.Angdata;
     axh = plot_rangeAng(heatmap,rng_grid,agl_grid);
     hold on
+<<<<<<< HEAD
+  
+    Id = find(Results(:,1) == i);
+    for j=1:length(Id)
+        index = Id(j);
+        if Results(index,4) == 0
+            txt = 'pedestrian'
+            filledCircle([agl_grid(1,Results(index,2)),rng_grid(Results(index,3),1)],0.5,1000,'r'); 
+            text(agl_grid(1,Results(index,2))+5,rng_grid(Results(index,3),1)+1,1,txt,'Color','r');
+        elseif Results(index,4) == 1
+            txt = 'car';
+            filledCircle([agl_grid(1,Results(index,2)),rng_grid(Results(index,3),1)],0.5,1000,'g'); 
+            text(agl_grid(1,Results(index,2))-10,rng_grid(Results(index,3),1)+1,1,txt,'Color','r');
+        elseif Results(index,4) == 2   
+            txt = 'cyclist';
+            filledCircle([agl_grid(1,Results(index,2)),rng_grid(Results(index,3),1)],0.5,1000,'g'); 
+            text(agl_grid(1,Results(index,2))-10,rng_grid(Results(index,3),1)+1,1,txt,'Color','g');
+        elseif Results(index,4) == -1
+            saved_fig_file_name = strcat('D:/tmp/demo_figure/',data_name,'/',data_name,'_',num2str(i,'%3d'));
+            eval(['saveas(axh,saved_fig_file_name,''png'');'])
+            close
+            continue
+        else
+        end
+%         if strcmp(txt,'pedestrian')
+%             filledCircle([agl_grid(1,Results(index,2)),rng_grid(Results(index,3),1)],0.5,1000,'r'); 
+%             text(agl_grid(1,Results(index,2))+5,rng_grid(Results(index,3),1)+1,1,txt,'Color','r');
+%         else
+%             continue
+%         end
+        
+    end
+    
+    saved_fig_file_name = strcat('D:/tmp/demo_figure/',data_name,'/',data_name,'_',num2str(i,'%3d'));
+=======
     
     if Results(i+1,3) == 0
         txt = 'pedestrian';
@@ -69,6 +117,7 @@ for i = start_frame:end_frame
     filledCircle([agl_grid(1,Results(i+1,2)),rng_grid(Results(i+1,1),1)],0.5,1000,'r'); 
     text(agl_grid(1,Results(i+1,2))+5,rng_grid(Results(i+1,1),1)+1,1,txt,'Color','r')
     saved_fig_file_name = strcat('/home/admin-cmmb/Desktop/demo_figure/',data_name,'/',data_name,'_',num2str(i,'%3d'));
+>>>>>>> 25cc2d5e751d06b0021e211d61c6d2f04cea6773
     eval(['saveas(axh,saved_fig_file_name,''png'');'])
     close
 end
