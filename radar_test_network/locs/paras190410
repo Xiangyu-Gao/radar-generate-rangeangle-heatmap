@@ -1,9 +1,0 @@
-% configuration parameters
-Fs = 4*10^6;
-sweepSlope = 21.002e12;
-samples = 128;
-loop = 255;
-Tc = 60e-6; %us
-fft_Rang = 128;
-fft_Vel = 256;
-fft_Ang = 91;
