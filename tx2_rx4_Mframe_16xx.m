@@ -10,8 +10,6 @@ Rx = 4;
 Tx = 2;
 
 % file information and frame information
-file_location = 'radar_data_20190510';
-data_name = '0423';
 frame_start = 2;
 frame_end = 129;
 option = 2; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
@@ -21,44 +19,12 @@ IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 0;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 0;% 1==> Windowing before doing angle fft
 num_stored_figs = 50;% the number of figures that are going to be stored
-cali_n = 3; % the number of range bins that need to be calibrated
+cali_n = 3;
+% the number of range bins that need to be calibrated
 neidop_n = 3; % the number of neighbored bins around the selected the doppler 
  
 % generate file name and folder
-file_name = strcat('/mnt/disk1/RAW RADAR DATA/',file_location,'/',data_name,'/adc_data.bin');
-for ign = 1:1
-if option == 0 && Is_Windowed == 0
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/',file_location,'/',data_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/UNWINDOWED/',file_location,'/',data_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/',file_location,'/',data_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/',file_location,'/',data_name,'/POSITION/',data_name,'_pos.txt');
-elseif option == 0 && Is_Windowed == 1
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/WINDOWED/',file_location,'/',data_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/WINDOWED/',file_location,'/',data_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/WINDOWED/',file_location,'/',data_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/WINDOWED/',file_location,'/',data_name,'/POSITION/',data_name,'_pos.txt');
-elseif option == 1 && Is_Windowed == 0
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_UNWINDOWED/',file_location,'/',data_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/MERGED_UNWINDOWED/',file_location,'/',data_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_UNWINDOWED/',file_location,'/',data_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_UNWINDOWED/',file_location,'/',data_name,'/POSITION/',data_name,'_pos.txt');
-elseif option == 1 && Is_Windowed == 1
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_WINDOWED/',file_location,'/',data_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/MERGED_WINDOWED/',file_location,'/',data_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_WINDOWED/',file_location,'/',data_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_WINDOWED/',file_location,'/',data_name,'/POSITION/',data_name,'_pos.txt');
-end
-
-if ~exist(saved_folder_name, 'dir') % check the folder exist
-    mkdir(saved_folder_name);
-end
-if ~exist(saved_fig_folder_name, 'dir') % check the folder exist
-    mkdir(saved_fig_folder_name);
-end
-if ~exist(saved_pos_folder_name, 'dir') % check the folder exist
-    mkdir(saved_pos_folder_name);
-end
-end
+file_name = 'C:\ti\mmwave_studio_02_00_00_02\mmWaveStudio\PostProc\adc_data.bin';
 
 % configuration parameters
 Fs = 4*10^6;
@@ -379,7 +345,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
     end
 end
 
-if IS_SAVE_Data
-    dlmwrite(saved_pos_file_name,obj_pos_value);
-end
+% if IS_SAVE_Data
+%     dlmwrite(saved_pos_file_name,obj_pos_value);
+% end
 

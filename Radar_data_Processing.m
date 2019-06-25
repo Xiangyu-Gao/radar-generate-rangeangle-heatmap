@@ -52,23 +52,13 @@ cali_n = 3; % the number of range bins that need to be calibrated
 neidop_n = 3; % the number of neighbored bins around the selected the doppler 
 
 %% file information
-<<<<<<< HEAD
 capture_date = '2019_05_24/';
-=======
-capture_date = 'radar_data_20190510';
->>>>>>> 25cc2d5e751d06b0021e211d61c6d2f04cea6773
-
-
 folder_location = strcat('D:/RawData/',capture_date);
 
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-<<<<<<< HEAD
 for inum = 5:5
-=======
-for inum = 4:9
->>>>>>> 25cc2d5e751d06b0021e211d61c6d2f04cea6773
     
     file_name = files(inum).name;
     % generate file name and folder
