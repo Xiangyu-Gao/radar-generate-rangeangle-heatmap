@@ -11,7 +11,7 @@ Tx = 2;
 
 % file information and frame information
 frame_start = 2;
-frame_end = 6;
+frame_end = 4;
 option = 0; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
             % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
 IS_Plot_RD = 1; % 1 ==> plot the Range-Doppler heatmap 
@@ -88,7 +88,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
     if option == 0
         %% plot ang-range and find the location of objects
         for ip = 1:1
-        if i > frame_start-1
+        if i == 1||i > frame_start-1
             % FOR CHIRP 1
             % Range FFT
             [Rangedata_chirp1] = fft_range(Xcube_chirp1,fft_Rang);

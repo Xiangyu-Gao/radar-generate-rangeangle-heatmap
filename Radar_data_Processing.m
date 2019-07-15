@@ -14,7 +14,7 @@ Fs = 4*10^6;
 sweepSlope = 21.002e12;
 samples = 128;
 loop = 255;
-Tc = 60e-6; %us
+Tc = 120e-6; %us
 fft_Rang = 128;
 fft_Vel = 256;
 fft_Ang = 91;
@@ -39,7 +39,7 @@ for ig = 1:1
 end
 
 % Algorithm parameters
-frame_start = 2;
+frame_start = 1;
 frame_end = 900;
 option = 0; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
             % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
@@ -108,8 +108,12 @@ for inum = 5:5
         frame_end = Frame_num;
     else
         fprintf('Error! Frame number is not an integer')
-        frame_end = fix(Frame_num);
-        num_stored_figs = frame_end;
+        if Frame_num < 900
+            frame_start = 900 - fix(Frame_num) + 1;
+            % zero fill the data_all
+            num_zero_fill = 900*data_each_frame - data_length;
+            data_all = [zeros(num_zero_fill,1); data_all];
+        end
     end
     
     caliDcRange_chirp1 = [];
