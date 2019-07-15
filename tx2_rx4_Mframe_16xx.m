@@ -14,10 +14,10 @@ frame_start = 2;
 frame_end = 6;
 option = 0; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
             % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
-IS_Plot_RD = 1; % 1 ==> plot the Range-Doppler heatmap 
-IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
-Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
-Is_Windowed = 0;% 1==> Windowing before doing angle fft
+IS_Plot_RD = true; % 1 ==> plot the Range-Doppler heatmap 
+IS_SAVE_Data = false;% 1 ==> save range-angle data and heatmap figure
+Is_Det_Static = true;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
+Is_Windowed = false;% 1==> Windowing before doing angle fft
 num_stored_figs = 50;% the number of figures that are going to be stored
 cali_n = 3;
 % the number of range bins that need to be calibrated
@@ -97,7 +97,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
             [Rangedata_chirp1,caliDcRange_chirp1] = caliDcRangeSig(Rangedata_chirp1,i,loop,frame_start,caliDcRange_chirp1,cali_n);
             
             % Check whether to plot range-doppler heatmap
-            if IS_Plot_RD == 1
+            if IS_Plot_RD
                 % Doppler FFT
                 [Dopdata_chirp1] = fft_doppler(Rangedata_chirp1,fft_Vel);
             
@@ -156,6 +156,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
             end
         end
         end
+        %% igonre the following part currently
 %     elseif option == 1
 %         %% generate the synthetic(merged) range-angle heatmap
 %         for iS = 1:1
@@ -179,7 +180,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
 %             [Dopdata_chirp1] = fft_doppler(Rangedata_chirp1,fft_Vel);% Doppler FFT
 %             [Dopdata_chirp2] = fft_doppler(Rangedata_chirp2,fft_Vel);% Doppler FFT
 %             
-%             if IS_Plot_RD == 1           
+%             if IS_Plot_RD          
 %                 % plot range-doppler(with DC removal)
 %                 plot_rangeDop(Dopdata_chirp1,vel_grid,rng_grid)
 %             else   
@@ -344,7 +345,7 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
     end
 end
 
-% if IS_SAVE_Data
-%     dlmwrite(saved_pos_file_name,obj_pos_value);
-% end
+if IS_SAVE_Data
+    dlmwrite(saved_pos_file_name,obj_pos_value);
+end
 
