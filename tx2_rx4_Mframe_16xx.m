@@ -156,189 +156,189 @@ for i=1:frame_end % 1:end frame, Note:start frame must be 1
             end
         end
         end
-    elseif option == 1
-        %% generate the synthetic(merged) range-angle heatmap
-        for iS = 1:1
-        if i > frame_start-1
-            x_dop = [];
-            x_dop_C = [];
-            
-            % FOR CHIRP 1
-            % Range FFT
-            [Rangedata_chirp1] = fft_range(Xcube_chirp1,fft_Rang);
-            % caliDcRangeSig,cali_n=3
-            [Rangedata_chirp1,caliDcRange_chirp1] = caliDcRangeSig(Rangedata_chirp1,i,loop,frame_start,caliDcRange_chirp1,cali_n);
-          
-            % FOR CHIRP 2
-            % Range FFT
-            [Rangedata_chirp2] = fft_range(Xcube_chirp2,fft_Rang);
-            % caliDcRangeSig
-            [Rangedata_chirp2,caliDcRange_chirp2] = caliDcRangeSig(Rangedata_chirp2,i,loop,frame_start,caliDcRange_chirp2,cali_n);           
-           
-            % Generate range-doppler heatmap for chirp1                
-            [Dopdata_chirp1] = fft_doppler(Rangedata_chirp1,fft_Vel);% Doppler FFT
-            [Dopdata_chirp2] = fft_doppler(Rangedata_chirp2,fft_Vel);% Doppler FFT
-            
-            if IS_Plot_RD == 1           
-                % plot range-doppler(with DC removal)
-                plot_rangeDop(Dopdata_chirp1,vel_grid,rng_grid)
-            else   
-            end
-            
-            Dop_sum = squeeze(sum(Dopdata_chirp1,2)/size(Dopdata_chirp1,2)); % Sum 4 receive antennas
-            
-            % CFAR to detect all velocity component
-            for rani = cali_n+1:fft_Rang  % from range 4(because the DC component in range1-3 have been canceled)
-                x_detected = cfar_ca1D(Dop_sum(rani,:),4,4,3.5,1);
-                x_dop = [x_dop,x_detected];
-            end
-            
-            % deal with the empty x_dop (CFAR didn't detect the object)
-            if length(x_dop) == 0
-                % find the maximum velocity component in heatmap
-                [peak_pos] = find_2Dmax(Dop_sum,cali_n+1,fft_Rang,1,fft_Vel);
-                x_dop = [x_dop,[peak_pos(2),0,0]'];
-            end
-            
-            [x_dop_U,~,~] = unique(x_dop(1,:)); % make detecton result unique
-            
-            for dopi = 1:length(x_dop_U) % add the neighbor bins
-                x_dop_C = [x_dop_C,[max(x_dop_U(dopi)-neidop_n,1):1:min(x_dop_U(dopi)+neidop_n,fft_Vel)]];
-            end
-            
-            [x_dop_CU,~,~] = unique(x_dop_C(1,:)); % make detecton result unique again
-            
-            % Angele FFT
-            Dopdata_merge = [Dopdata_chirp1,Dopdata_chirp2];
-            Angdata = fft_angle(Dopdata_merge,fft_Ang,Is_Windowed);
-            
-            % sum selected range-angle heatmaps, the indexes are in x_dop_CU
-            Angdata_merge = sum(Angdata(:,:,x_dop_CU),3)/length(x_dop_CU);
-            Angdata_merge_RemoveDC = (sum(Angdata(:,:,x_dop_CU),3) - Angdata(:,:,65))/(length(x_dop_CU) - 1);
-         
-            % plot Range_Angle heatmap
-            if i < frame_start + num_stored_figs
-                [axh] = plot_rangeAng(Angdata_merge_RemoveDC,rng_grid,agl_grid);
-            end
-
-            if i == frame_start % search the initial position of object
-                cur_pos = find_obj_position(Angdata_merge_RemoveDC,init_pos,1,1);
-                init_pos = cur_pos;
-                obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
-                obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
-            else % search the position of object in specific range(temporarily)
-                cur_pos = find_obj_position(Angdata_merge_RemoveDC,init_pos,0,1);
-                init_pos = cur_pos;
-                obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
-                obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
-            end
-
-            if IS_SAVE_Data
-                [Angdata_merge] = Normalize(Angdata_merge);
-                % save range-angle heatmap to .mat file
-                saved_file_name = strcat(saved_folder_name,'/',data_name,'_',num2str(i-frame_start,'%06d'),'.mat');
-                eval(['save(saved_file_name,''Angdata_merge'',''-v6'');'])
-
-                if i < frame_start + num_stored_figs % plot rectangle
-                    posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
-                    hold on
-                    plot_rectangle(posiObjCam,widthRec,heigtRec);
-                    % save to figure
-                    saved_fig_file_name = strcat(saved_fig_folder_name,'/','frame_',num2str(i,'%06d'),'.png');
-                    eval(['saveas(axh,saved_fig_file_name,''png'');'])
-                    close 
-                end
-            end
-        i % print index i    
-        end
-        end
-    elseif option == 2
-        %% record raw data in the form of matrix
-        for ir = 1:1
-            if i > frame_start-1
-                saved_file_name = strcat(data_name,'_',num2str(i,'%03d'),'.mat');
-                Xcube_chirp = [Xcube_chirp1,Xcube_chirp2];
-                eval(['save(saved_file_name,''Xcube_chirp'',''-v6'');']);
-            else
-            end
-        end
-    elseif option == 3
-        %% ran+dop+angle estimate
-        for ie = 1:1
-        % chirp1
-        % range fft
-        [Rangedata_chirp1]=range_fft(Xcube_chirp1,fft_Rang,fft_Vel,fft_Ang);
-        
-        % caliDcRangeSig
-        for anti = 1:4
-            if rem(i,20) == 1
-                caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp1(:,anti,:)),2)/loop;
-            else
-            end
-            % remove DC
-            Rangedata_chirp1(1:3,anti,:) = Rangedata_chirp1(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
-                1,size(Rangedata_chirp1(1:3,anti,:),2),size(Rangedata_chirp1(1:3,anti,:),3));
-        end
-        
-        % doppler fft
-        Dopdata_chirp1 = doppler_fft(Rangedata_chirp1,fft_Rang,fft_Vel,fft_Ang);
-        figure()
-        mesh(vel_grid,rng_grid,abs(squeeze(Dopdata_chirp1(:,1,:))));
-        view(0,90)
-        axis([-10,10,0,25])
-        title('Range-doppler plot for Rx1')
-        xlabel('doppler')
-        ylabel('Range')
-        
-        %for chirp2
-        [Rangedata_chirp2]=range_fft(Xcube_chirp2,fft_Rang,fft_Vel,fft_Ang);
-        
-        % caliDcRangeSig
-        for anti = 1:4
-            if rem(i,20) == 1
-                caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp2(:,anti,:)),2)/loop;
-            else
-            end
-            % remove DC
-            Rangedata_chirp2(1:3,anti,:) = Rangedata_chirp2(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
-                1,size(Rangedata_chirp2(1:3,anti,:),2),size(Rangedata_chirp2(1:3,anti,:),3));
-        end
-        
-        % doppler fft
-        Dopdata_chirp2 = doppler_fft(Rangedata_chirp2,fft_Rang,fft_Vel,fft_Ang);
-        % sum
-        Dopdata_sum = squeeze(sum(abs(Dopdata_chirp1)+abs(Dopdata_chirp2),2))/8;
-        
-        for rani = 4:fft_Rang     %%% from range 4(because the DC component in range1-3 have been canceled)
-            x_detected = cfar_ca1D(Dopdata_sum(rani,:),4,3,4,1);
-            x_dop = [x_dop,x_detected];
-        end
-        
-        % make unique
-        [C,~,~] = unique(x_dop(1,:));
-        
-        % CFAR for each specific doppler bin
-        for dopi = 1:size(C,2)
-            y_detected = cfar_ca1D(Dopdata_sum(:,C(1,dopi)),4,4,3,0);
-            if isempty(y_detected) ~= 1
-                Resl_indx_temp = [C(1,dopi)*ones(1,size(y_detected,2));y_detected];%%% 1st doppler, 2st range, 3st object power(log2), 4th estimated noise
-                Resl_indx = [Resl_indx,Resl_indx_temp];
-            else
-                
-            end
-        end
-        
-        % delete the nodes which has -inf noiseSum
-        Resl_indx(:,isinf(Resl_indx(4,:))) = [];
-        
-        % Angle FFT
-        for angi = 1:size(Resl_indx,2)
-            Dop_Antedata = [Dopdata_chirp1(Resl_indx(2,angi),:,Resl_indx(1,angi)),Dopdata_chirp2(Resl_indx(2,angi),:,Resl_indx(1,angi))];
-            Angdata = angFFT(Dop_Antedata,fft_Ang);
-            [~,I]=max(abs(Angdata));
-            Resl_indx(5,angi) = I;
-        end
-        end
+%     elseif option == 1
+%         %% generate the synthetic(merged) range-angle heatmap
+%         for iS = 1:1
+%         if i > frame_start-1
+%             x_dop = [];
+%             x_dop_C = [];
+%             
+%             % FOR CHIRP 1
+%             % Range FFT
+%             [Rangedata_chirp1] = fft_range(Xcube_chirp1,fft_Rang);
+%             % caliDcRangeSig,cali_n=3
+%             [Rangedata_chirp1,caliDcRange_chirp1] = caliDcRangeSig(Rangedata_chirp1,i,loop,frame_start,caliDcRange_chirp1,cali_n);
+%           
+%             % FOR CHIRP 2
+%             % Range FFT
+%             [Rangedata_chirp2] = fft_range(Xcube_chirp2,fft_Rang);
+%             % caliDcRangeSig
+%             [Rangedata_chirp2,caliDcRange_chirp2] = caliDcRangeSig(Rangedata_chirp2,i,loop,frame_start,caliDcRange_chirp2,cali_n);           
+%            
+%             % Generate range-doppler heatmap for chirp1                
+%             [Dopdata_chirp1] = fft_doppler(Rangedata_chirp1,fft_Vel);% Doppler FFT
+%             [Dopdata_chirp2] = fft_doppler(Rangedata_chirp2,fft_Vel);% Doppler FFT
+%             
+%             if IS_Plot_RD == 1           
+%                 % plot range-doppler(with DC removal)
+%                 plot_rangeDop(Dopdata_chirp1,vel_grid,rng_grid)
+%             else   
+%             end
+%             
+%             Dop_sum = squeeze(sum(Dopdata_chirp1,2)/size(Dopdata_chirp1,2)); % Sum 4 receive antennas
+%             
+%             % CFAR to detect all velocity component
+%             for rani = cali_n+1:fft_Rang  % from range 4(because the DC component in range1-3 have been canceled)
+%                 x_detected = cfar_ca1D(Dop_sum(rani,:),4,4,3.5,1);
+%                 x_dop = [x_dop,x_detected];
+%             end
+%             
+%             % deal with the empty x_dop (CFAR didn't detect the object)
+%             if length(x_dop) == 0
+%                 % find the maximum velocity component in heatmap
+%                 [peak_pos] = find_2Dmax(Dop_sum,cali_n+1,fft_Rang,1,fft_Vel);
+%                 x_dop = [x_dop,[peak_pos(2),0,0]'];
+%             end
+%             
+%             [x_dop_U,~,~] = unique(x_dop(1,:)); % make detecton result unique
+%             
+%             for dopi = 1:length(x_dop_U) % add the neighbor bins
+%                 x_dop_C = [x_dop_C,[max(x_dop_U(dopi)-neidop_n,1):1:min(x_dop_U(dopi)+neidop_n,fft_Vel)]];
+%             end
+%             
+%             [x_dop_CU,~,~] = unique(x_dop_C(1,:)); % make detecton result unique again
+%             
+%             % Angele FFT
+%             Dopdata_merge = [Dopdata_chirp1,Dopdata_chirp2];
+%             Angdata = fft_angle(Dopdata_merge,fft_Ang,Is_Windowed);
+%             
+%             % sum selected range-angle heatmaps, the indexes are in x_dop_CU
+%             Angdata_merge = sum(Angdata(:,:,x_dop_CU),3)/length(x_dop_CU);
+%             Angdata_merge_RemoveDC = (sum(Angdata(:,:,x_dop_CU),3) - Angdata(:,:,65))/(length(x_dop_CU) - 1);
+%          
+%             % plot Range_Angle heatmap
+%             if i < frame_start + num_stored_figs
+%                 [axh] = plot_rangeAng(Angdata_merge_RemoveDC,rng_grid,agl_grid);
+%             end
+% 
+%             if i == frame_start % search the initial position of object
+%                 cur_pos = find_obj_position(Angdata_merge_RemoveDC,init_pos,1,1);
+%                 init_pos = cur_pos;
+%                 obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
+%                 obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
+%             else % search the position of object in specific range(temporarily)
+%                 cur_pos = find_obj_position(Angdata_merge_RemoveDC,init_pos,0,1);
+%                 init_pos = cur_pos;
+%                 obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
+%                 obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
+%             end
+% 
+%             if IS_SAVE_Data
+%                 [Angdata_merge] = Normalize(Angdata_merge);
+%                 % save range-angle heatmap to .mat file
+%                 saved_file_name = strcat(saved_folder_name,'/',data_name,'_',num2str(i-frame_start,'%06d'),'.mat');
+%                 eval(['save(saved_file_name,''Angdata_merge'',''-v6'');'])
+% 
+%                 if i < frame_start + num_stored_figs % plot rectangle
+%                     posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
+%                     hold on
+%                     plot_rectangle(posiObjCam,widthRec,heigtRec);
+%                     % save to figure
+%                     saved_fig_file_name = strcat(saved_fig_folder_name,'/','frame_',num2str(i,'%06d'),'.png');
+%                     eval(['saveas(axh,saved_fig_file_name,''png'');'])
+%                     close 
+%                 end
+%             end
+%         i % print index i    
+%         end
+%         end
+%     elseif option == 2
+%         %% record raw data in the form of matrix
+%         for ir = 1:1
+%             if i > frame_start-1
+%                 saved_file_name = strcat(data_name,'_',num2str(i,'%03d'),'.mat');
+%                 Xcube_chirp = [Xcube_chirp1,Xcube_chirp2];
+%                 eval(['save(saved_file_name,''Xcube_chirp'',''-v6'');']);
+%             else
+%             end
+%         end
+%     elseif option == 3
+%         %% ran+dop+angle estimate
+%         for ie = 1:1
+%         % chirp1
+%         % range fft
+%         [Rangedata_chirp1]=range_fft(Xcube_chirp1,fft_Rang,fft_Vel,fft_Ang);
+%         
+%         % caliDcRangeSig
+%         for anti = 1:4
+%             if rem(i,20) == 1
+%                 caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp1(:,anti,:)),2)/loop;
+%             else
+%             end
+%             % remove DC
+%             Rangedata_chirp1(1:3,anti,:) = Rangedata_chirp1(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
+%                 1,size(Rangedata_chirp1(1:3,anti,:),2),size(Rangedata_chirp1(1:3,anti,:),3));
+%         end
+%         
+%         % doppler fft
+%         Dopdata_chirp1 = doppler_fft(Rangedata_chirp1,fft_Rang,fft_Vel,fft_Ang);
+%         figure()
+%         mesh(vel_grid,rng_grid,abs(squeeze(Dopdata_chirp1(:,1,:))));
+%         view(0,90)
+%         axis([-10,10,0,25])
+%         title('Range-doppler plot for Rx1')
+%         xlabel('doppler')
+%         ylabel('Range')
+%         
+%         %for chirp2
+%         [Rangedata_chirp2]=range_fft(Xcube_chirp2,fft_Rang,fft_Vel,fft_Ang);
+%         
+%         % caliDcRangeSig
+%         for anti = 1:4
+%             if rem(i,20) == 1
+%                 caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp2(:,anti,:)),2)/loop;
+%             else
+%             end
+%             % remove DC
+%             Rangedata_chirp2(1:3,anti,:) = Rangedata_chirp2(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
+%                 1,size(Rangedata_chirp2(1:3,anti,:),2),size(Rangedata_chirp2(1:3,anti,:),3));
+%         end
+%         
+%         % doppler fft
+%         Dopdata_chirp2 = doppler_fft(Rangedata_chirp2,fft_Rang,fft_Vel,fft_Ang);
+%         % sum
+%         Dopdata_sum = squeeze(sum(abs(Dopdata_chirp1)+abs(Dopdata_chirp2),2))/8;
+%         
+%         for rani = 4:fft_Rang     %%% from range 4(because the DC component in range1-3 have been canceled)
+%             x_detected = cfar_ca1D(Dopdata_sum(rani,:),4,3,4,1);
+%             x_dop = [x_dop,x_detected];
+%         end
+%         
+%         % make unique
+%         [C,~,~] = unique(x_dop(1,:));
+%         
+%         % CFAR for each specific doppler bin
+%         for dopi = 1:size(C,2)
+%             y_detected = cfar_ca1D(Dopdata_sum(:,C(1,dopi)),4,4,3,0);
+%             if isempty(y_detected) ~= 1
+%                 Resl_indx_temp = [C(1,dopi)*ones(1,size(y_detected,2));y_detected];%%% 1st doppler, 2st range, 3st object power(log2), 4th estimated noise
+%                 Resl_indx = [Resl_indx,Resl_indx_temp];
+%             else
+%                 
+%             end
+%         end
+%         
+%         % delete the nodes which has -inf noiseSum
+%         Resl_indx(:,isinf(Resl_indx(4,:))) = [];
+%         
+%         % Angle FFT
+%         for angi = 1:size(Resl_indx,2)
+%             Dop_Antedata = [Dopdata_chirp1(Resl_indx(2,angi),:,Resl_indx(1,angi)),Dopdata_chirp2(Resl_indx(2,angi),:,Resl_indx(1,angi))];
+%             Angdata = angFFT(Dop_Antedata,fft_Ang);
+%             [~,I]=max(abs(Angdata));
+%             Resl_indx(5,angi) = I;
+%         end
+%         end
     else
             
     end
