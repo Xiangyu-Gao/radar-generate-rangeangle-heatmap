@@ -13,28 +13,28 @@ for i=1:size(agl_grid,2)
 end
 
 %% plot 2D(range-angle)
-for i=1:1
-    Xpow = abs(Xcube).^2;
-    Xpow=squeeze(Xpow(:,:,i));
 
-    % noisefloor = db2pow(-15);
-    Xsnr=Xpow;
-    % Xsnr = pow2db(Xpow/noisefloor);
-    
-    figure()
-    set(gcf,'Position',[10,10,530,420])
-    [axh] = surf(agl_grid,rng_grid,Xsnr);
-    view(0,90)
-    axis([-50 50 0 25]);
-    grid off
-    shading interp
-    xlabel('Angle of arrive(degrees)')
-    ylabel('Range(meters)')
-    colorbar%     caxis([0,0.6])
+Xpow = abs(Xcube);
+Xpow=squeeze(sum(Xpow,3)/size(Xpow,3));
+
+% noisefloor = db2pow(-15);
+Xsnr=Xpow;
+% Xsnr = pow2db(Xpow/noisefloor);
+
+figure('visible','off')
+set(gcf,'Position',[10,10,530,420])
+[axh] = surf(agl_grid,rng_grid,Xsnr);
+view(0,90)
+axis([-60 60 0.5 25]);
+grid off
+shading interp
+xlabel('Angle of arrive(degrees)')
+ylabel('Range(meters)')
+colorbar
+caxis([0,1])
 %     caxis([1.0e+14*0.0000,1.0e+15*7.8229])
 
 
-    title('Range-Angle heatmap')
-    
-end
+title('Range-Angle heatmap')
+
 end

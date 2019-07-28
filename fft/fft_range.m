@@ -10,7 +10,7 @@ Nd=size(Xcube,3);   %%%length of chirp loop
 
 for i=1:Ne
     for j=1:Nd
-%        win_rng =Xcube(:,i,j).*blackman(Nr);
+%        win_rng =Xcube(:,i,j).*hanning(Nr);
        win_rng =Xcube(:,i,j);
        Rangedata(:,i,j)=fft(win_rng,fft_Rang);
     end

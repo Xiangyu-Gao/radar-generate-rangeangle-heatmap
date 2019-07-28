@@ -4,14 +4,14 @@ close all;
 %% parameter setting
 % constant parameters
 c = physconst('LightSpeed');% Speed of light in air (m/s)
-fc = 77e9;% Center frequency (Hz)
+fc = 77e9; % Center frequency (Hz)
 lambda = c/fc;
 Rx = 4;
 Tx = 2;
 
 % configuration parameters
 Fs = 4*10^6;
-sweepSlope = 21.002e12;
+sweepSlope = 21.0017e12;
 samples = 128;
 loop = 255;
 Tc = 120e-6; %us
@@ -19,387 +19,253 @@ fft_Rang = 128;
 fft_Vel = 256;
 fft_Ang = 91;
 
-% size of bounding box
-widthRec = 22.5;% degrees ==> pi/8
-heigtRec = 2.5;% meters
-
 % Creat grid table
-for ig = 1:1
-    freq_res = Fs/fft_Rang;% range_grid
-    freq_grid = (0:fft_Rang-1).'*freq_res;
-    rng_grid = freq_grid*c/sweepSlope/2;% d=frediff_grid*c/sweepSlope/2;
-    
-    w = [-180:4:180]; % angle_grid
-    agl_grid = asin(w/180)*180/pi; % [-1,1]->[-pi/2,pi/2]
-    
-    % velocity_grid
-    dop_grid = fftshiftfreqgrid(fft_Vel,1/Tc); % now fs is equal to 1/Tc
-    vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs], dopgrid = [-fs/2,fs/2]
-    % vel_grid=3.6*vel_grid;        % unit: km/h
-end
+freq_res = Fs/fft_Rang;% range_grid
+freq_grid = (0:fft_Rang-1).'*freq_res;
+rng_grid = freq_grid*c/sweepSlope/2;% d=frediff_grid*c/sweepSlope/2;
+
+w = [-180:4:180]; % angle_grid
+agl_grid = asin(w/180)*180/pi; % [-1,1]->[-pi/2,pi/2]
+
+% velocity_grid
+dop_grid = fftshiftfreqgrid(fft_Vel,1/Tc); % now fs is equal to 1/Tc
+vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs], dopgrid = [-fs/2,fs/2]
+
 
 % Algorithm parameters
 frame_start = 1;
 frame_end = 900;
-option = 0; % option=0,only plot ang-range; option=1, only generate the synthetic(merged) range-angle heatmap;
-            % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
-IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap 
+option = 0; % option=0,only plot ang-range; option=1, 
+% option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
+IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
 IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
-Is_Windowed = 1;% 1==> Windowing before doing angle fft
+Is_Windowed = 0;% 1==> Windowing before doing range and angle fft
 num_stored_figs = 900;% the number of figures that are going to be stored
-cali_n = 3; % the number of range bins that need to be calibrated
-neidop_n = 3; % the number of neighbored bins around the selected the doppler 
 
 %% file information
-capture_date = '2019_05_24/';
-folder_location = strcat('D:/RawData/',capture_date);
+capture_date_list = ["2019_04_09", "2019_05_23"];
 
+for ida = 1:length(capture_date_list)
+capture_date = capture_date_list(ida);
+folder_location = strcat('F:/RawData/', capture_date, '/');
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-for inum = 5:5
-    
+% processed_files = [3:7,9:14,16:21] %0430
+% processed_files = [3:7,9:14,16:21] %0430
+% processed_files = [3:5,7:16] %0509
+% processed_files = [3:n_files] %0528 
+% processed_files = [3:n_files] %0529
+if contains(capture_date, '04_09')
+    processed_files = [3:14,18] %0409
+elseif contains(capture_date, '04_30')
+    processed_files = [3:7,9:14,16:21] %0430
+elseif contains(capture_date, '05_09')
+    processed_files = [3:5,7:16] %0509
+else
+    processed_files = [3:n_files] %0529,0529,0523
+end
+
+for index = 1:length(processed_files)
+    inum = processed_files(index);
     file_name = files(inum).name;
     % generate file name and folder
     file_location = strcat(folder_location,'/',file_name,'/rad_reo_zerf/adc_data_0.bin');
     for ign = 1:1
-    if option == 0 && Is_Windowed == 0
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/',capture_date,'/',file_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/UNWINDOWED/',capture_date,'/',file_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/',capture_date,'/',file_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/UNWINDOWED/',capture_date,'/',file_name,'/POSITION/',file_name,'_pos.txt');
-    elseif option == 0 && Is_Windowed == 1
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/WINDOWED/',capture_date,'/',file_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/WINDOWED/',capture_date,'/',file_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/WINDOWED/',capture_date,'/',file_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/WINDOWED/',capture_date,'/',file_name,'/POSITION/',file_name,'_pos.txt');
-    elseif option == 1 && Is_Windowed == 0
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_UNWINDOWED/',capture_date,'/',file_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/MERGED_UNWINDOWED/',capture_date,'/',file_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_UNWINDOWED/',capture_date,'/',file_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_UNWINDOWED/',capture_date,'/',file_name,'/POSITION/',file_name,'_pos.txt');
-    elseif option == 1 && Is_Windowed == 1
-    saved_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_WINDOWED/',capture_date,'/',file_name,'/DATA');
-    saved_fig_folder_name = strcat('/mnt/disk1/RADAR HEATMAP FIGURE/MERGED_WINDOWED/',capture_date,'/',file_name);
-    saved_pos_folder_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_WINDOWED/',capture_date,'/',file_name,'/POSITION');
-    saved_pos_file_name = strcat('/mnt/disk1/PROCESSED_RADAR_DATA/MERGED_WINDOWED/',capture_date,'/',file_name,'/POSITION/',file_name,'_pos.txt');
-    end
-
-    if ~exist(saved_folder_name, 'dir') % check the folder exist
-    mkdir(saved_folder_name);
-    end
-    if ~exist(saved_fig_folder_name, 'dir') % check the folder exist
-    mkdir(saved_fig_folder_name);
-    end
-    if ~exist(saved_pos_folder_name, 'dir') % check the folder exist
-    mkdir(saved_pos_folder_name);
-    end
-    end
-
-    %% read the data file
-    eval(['data=readDCA16xx','(file_location);'])
-    data_all=reshape(data,size(data,1)*size(data,2),[]); % reshape 4 channels into 1
-    data_length=length(data_all);
-    data_each_frame=samples*loop*2*Rx;
-    Frame_num=data_length/data_each_frame;
-    % check whether Frame number is an integer
-    if Frame_num == fix(Frame_num)
-        frame_end = Frame_num;
-    else
-        fprintf('Error! Frame number is not an integer')
-        if Frame_num < 900
-            frame_start = 900 - fix(Frame_num) + 1;
-            % zero fill the data_all
-            num_zero_fill = 900*data_each_frame - data_length;
-            data_all = [zeros(num_zero_fill,1); data_all];
+        if option == 0 && Is_Windowed == 0
+            saved_folder_name = strcat('F:/Processed_data/UNWINDOWED/',capture_date,'/',file_name);
+            saved_fig_folder_name = strcat('F:/RADAR HEATMAP FIGURE/UNWINDOWED/',capture_date,'/',file_name);
+        elseif option == 0 && Is_Windowed == 1
+            saved_folder_name = strcat('F:/Processed_data/WINDOWED/',capture_date,'/',file_name,'/DATA');
+            saved_fig_folder_name = strcat('F:/RADAR HEATMAP FIGURE/WINDOWED/',capture_date,'/',file_name);
+        else
+        end
+        
+        if ~exist(saved_folder_name, 'dir') % check the folder exist
+            mkdir(saved_folder_name);
+        end
+        if ~exist(saved_fig_folder_name, 'dir') % check the folder exist
+            mkdir(saved_fig_folder_name);
         end
     end
     
-    caliDcRange_chirp1 = [];
-    caliDcRange_chirp2 = [];
-    obj_pos = [];
-    obj_pos_value = [];
-    init_pos = [];
-
-    for i=1:frame_end % 1:end frame, Note:start frame must be 1
-
-    % seperate each frame and reshape the raw data to foramt [samples,antennas,chirps]
-    Framedata(:,i)=data_all(((i-1)*data_each_frame+1):i*data_each_frame);
-    Frame_loop(:,:,i)=reshape(Framedata(:,i),samples*4,[]);
-    Frame_loop_chirp1(:,:,i)=Frame_loop(:,1:2:end,i);
-    Frame_loop_chirp2(:,:,i)=Frame_loop(:,2:2:end,i);
-    for jj=1:loop
-    Frame_loop_chirp1_Rx(:,:,jj,i)=reshape(Frame_loop_chirp1(:,jj,i),[samples Rx]);
-    Frame_loop_chirp2_Rx(:,:,jj,i)=reshape(Frame_loop_chirp2(:,jj,i),[samples Rx]);
+    %% read the data file
+    data = readDCA1000(file_location);
+    data_length = length(data);
+    data_each_frame = samples*loop*Tx;
+    Frame_num = data_length/data_each_frame;
+    
+    % check whether Frame number is an integer
+    if Frame_num == 900
+        frame_end = Frame_num;
+    elseif abs(Frame_num - 900) < 30
+        fprintf('Error! Frame is not complete')
+        frame_start = 900 - fix(Frame_num) + 1;
+        % zero fill the data
+        num_zerochirp_fill = 900*data_each_frame - data_length;
+        data = [zeros(4,num_zerochirp_fill), data];
+    elseif abs(Frame_num - 900) >= 30 && Frame_num == fix(Frame_num)
+        frame_end = Frame_num;
+    else
     end
-    Xcube_chirp1=permute(Frame_loop_chirp1_Rx(:,:,:,i),[1 2 3]);
-    Xcube_chirp2=permute(Frame_loop_chirp2_Rx(:,:,:,i),[1 2 3]);
-
-    %         % calculate energy (evalution)
-    %         cal_Enegry(Xcube_chirp1,Xcube_chirp2,Framedata)
-    %         plot_singnal_time(Xcube_chirp1)
-
-    if option == 0
-    %% plot ang-range and find the location of objects
-    for ip = 1:1
-    if i == 1||i > frame_start-1
-        % FOR CHIRP 1
-        % Range FFT
-        [Rangedata_chirp1] = fft_range(Xcube_chirp1,fft_Rang);
-
-        % caliDcRangeSig
-        [Rangedata_chirp1,caliDcRange_chirp1] = caliDcRangeSig(Rangedata_chirp1,i,loop,frame_start,caliDcRange_chirp1,cali_n);
-
-        % Check whether to plot range-doppler heatmap
-        if IS_Plot_RD == 1
-            % Doppler FFT
-            [Dopdata_chirp1] = fft_doppler(Rangedata_chirp1,fft_Vel);
-
-            % plot range-doppler
-            plot_rangeDop(Dopdata_chirp1,vel_grid,rng_grid)
-        else
-
+    
+    caliDcRange_odd = [];
+    caliDcRange_even = [];
+    
+    for i = frame_start:frame_end
+        % reshape data of each frame to the format [samples, Rx, chirp]
+        data_frame = data(:,(i-1)*data_each_frame+1:i*data_each_frame);
+        data_chirp = [];
+        for cj=1:Tx*loop
+            temp_data = data_frame(:,(cj-1)*samples+1:cj*samples);
+            data_chirp(:,:,cj) = temp_data;
         end
-
-        % FOR CHIRP 2
-        % Range FFT
-        [Rangedata_chirp2] = fft_range(Xcube_chirp2,fft_Rang);
-
-        % caliDcRangeSig
-        [Rangedata_chirp2,caliDcRange_chirp2] = caliDcRangeSig(Rangedata_chirp2,i,loop,frame_start,caliDcRange_chirp2,cali_n);
-
-        % Angle FFT
-        % need to do doppler compensation on Rangedata_chirp2 in future
-        Rangedata_merge = [Rangedata_chirp1,Rangedata_chirp2];
-        Angdata = fft_angle(Rangedata_merge,fft_Ang,Is_Windowed);
-
-        if i>1
+        chirp_odd = data_chirp(:,:,1:2:end);
+        chirp_even = data_chirp(:,:,2:2:end);
+        chirp_odd = permute(chirp_odd, [2,1,3]);
+        chirp_even = permute(chirp_even, [2,1,3]);
+        
+        if option == 0
+            %% plot ang-range and find the location of objects
+            % FOR CHIRP 1
+            % Range FFT
+            [Rangedata_odd] = fft_range(chirp_odd,fft_Rang);
+            
+            % Check whether to plot range-doppler heatmap
+            if IS_Plot_RD
+                % Doppler FFT
+                [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel);
+                % plot range-doppler
+                plot_rangeDop(Dopdata_odd,vel_grid,rng_grid)
+            else
+                
+            end
+            
+            % FOR CHIRP 2
+            % Range FFT
+            [Rangedata_even] = fft_range(chirp_even,fft_Rang);
+            
+            % Angle FFT
+            % need to do doppler compensation on Rangedata_chirp2 in future
+            Rangedata_merge = [Rangedata_odd,Rangedata_even];
+            Angdata = fft_angle(Rangedata_merge,fft_Ang,Is_Windowed);
+            Angdata_crop = Angdata(4:fft_Rang-3,:,:);
+            [Angdata_crop] = Normalize(Angdata_crop);
+            
             if i < frame_start + num_stored_figs % plot Range_Angle heatmap
-                [axh] = plot_rangeAng(Angdata,rng_grid,agl_grid);
+                [axh] = plot_rangeAng(Angdata_crop,rng_grid(4:fft_Rang-3),agl_grid);
             end
-
-            if i == frame_start % search the initial position of object
-                cur_pos = find_obj_position(Angdata,init_pos,1,Is_Det_Static);
-                init_pos = cur_pos;
-                obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
-                obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
-            else % search the position of object in specific range(temporarily)
-                cur_pos = find_obj_position(Angdata,init_pos,0,Is_Det_Static);
-                init_pos = cur_pos;
-                obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
-                obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
-            end
-
+            
             if IS_SAVE_Data
-                [Angdata] = Normalize(Angdata);
                 % save range-angle heatmap to .mat file
-                saved_file_name = strcat(saved_folder_name,'/',file_name,'_',num2str(i-frame_start,'%06d'),'.mat');
-                eval(['save(saved_file_name,''Angdata'',''-v6'');'])
-
+                saved_file_name = strcat(saved_folder_name,'/',file_name,'_',num2str(i-1,'%06d'),'.mat');
+                save(saved_file_name,'Angdata_crop','-v6');
+                
                 if i < frame_start + num_stored_figs % plot rectangle
-                    posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
-                    hold on
-                    plot_rectangle(posiObjCam,widthRec,heigtRec);
+%                     posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
+%                     hold on
+%                     plot_rectangle(posiObjCam,widthRec,heigtRec);
                     % save to figure
                     saved_fig_file_name = strcat(saved_fig_folder_name,'/','frame_',num2str(i,'%06d'),'.png');
-                    eval(['saveas(axh,saved_fig_file_name,''png'');'])
-                    close 
+                    saveas(axh,saved_fig_file_name,'png');
+                    close
                 end
             end
-        i % print index i    
-        end
-    end
-    end
-    elseif option == 1
-    %% generate the synthetic(merged) range-angle heatmap
-    for iS = 1:1
-    if i > frame_start-1
-        x_dop = [];
-        x_dop_C = [];
-
-        % FOR CHIRP 1
-        % Range FFT
-        [Rangedata_chirp1] = fft_range(Xcube_chirp1,fft_Rang);
-        % caliDcRangeSig,cali_n=3
-        [Rangedata_chirp1,caliDcRange_chirp1] = caliDcRangeSig(Rangedata_chirp1,i,loop,frame_start,caliDcRange_chirp1,cali_n);
-
-        % FOR CHIRP 2
-        % Range FFT
-        [Rangedata_chirp2] = fft_range(Xcube_chirp2,fft_Rang);
-        % caliDcRangeSig
-        [Rangedata_chirp2,caliDcRange_chirp2] = caliDcRangeSig(Rangedata_chirp2,i,loop,frame_start,caliDcRange_chirp2,cali_n);           
-
-        % Generate range-doppler heatmap for chirp1                
-        [Dopdata_chirp1] = fft_doppler(Rangedata_chirp1,fft_Vel);% Doppler FFT
-        [Dopdata_chirp2] = fft_doppler(Rangedata_chirp2,fft_Vel);% Doppler FFT
-
-        if IS_Plot_RD == 1           
-            % plot range-doppler(with DC removal)
-            plot_rangeDop(Dopdata_chirp1,vel_grid,rng_grid)
-        else   
-        end
-
-        Dop_sum = squeeze(sum(Dopdata_chirp1,2)/size(Dopdata_chirp1,2)); % Sum 4 receive antennas
-
-        % CFAR to detect all velocity component
-        for rani = cali_n+1:fft_Rang  % from range 4(because the DC component in range1-3 have been canceled)
-            x_detected = cfar_ca1D(Dop_sum(rani,:),4,4,3.5,1);
-            x_dop = [x_dop,x_detected];
-        end
-
-        % deal with the empty x_dop (CFAR didn't detect the object)
-        if length(x_dop) == 0
-            % find the maximum velocity component in heatmap
-            [peak_pos] = find_2Dmax(Dop_sum,cali_n+1,fft_Rang,1,fft_Vel);
-            x_dop = [x_dop,[peak_pos(2),0,0]'];
-        end
-
-        [x_dop_U,~,~] = unique(x_dop(1,:)); % make detecton result unique
-
-        for dopi = 1:length(x_dop_U) % add the neighbor bins
-            x_dop_C = [x_dop_C,[max(x_dop_U(dopi)-neidop_n,1):1:min(x_dop_U(dopi)+neidop_n,fft_Vel)]];
-        end
-
-        [x_dop_CU,~,~] = unique(x_dop_C(1,:)); % make detecton result unique again
-
-        % Angele FFT
-        Dopdata_merge = [Dopdata_chirp1,Dopdata_chirp2];
-        Angdata = fft_angle(Dopdata_merge,fft_Ang,Is_Windowed);
-
-        % sum selected range-angle heatmaps, the indexes are in x_dop_CU
-        Angdata_merge = sum(Angdata(:,:,x_dop_CU),3)/length(x_dop_CU);
-        Angdata_merge_RemoveDC = (sum(Angdata(:,:,x_dop_CU),3) - Angdata(:,:,65))/(length(x_dop_CU) - 1);
-
-        % plot Range_Angle heatmap
-        if i < frame_start + num_stored_figs
-            [axh] = plot_rangeAng(Angdata_merge_RemoveDC,rng_grid,agl_grid);
-        end
-
-        if i == frame_start % search the initial position of object
-            cur_pos = find_obj_position(Angdata_merge_RemoveDC,init_pos,1,1);
-            init_pos = cur_pos;
-            obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
-            obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
-        else % search the position of object in specific range(temporarily)
-            cur_pos = find_obj_position(Angdata_merge_RemoveDC,init_pos,0,1);
-            init_pos = cur_pos;
-            obj_pos = [obj_pos;i,cur_pos]; % obj_pos list format [frame, range, angle]
-            obj_pos_value = [obj_pos_value;i,rng_grid(cur_pos(1)),agl_grid(cur_pos(2))];
-        end
-
-        if IS_SAVE_Data
-            [Angdata_merge] = Normalize(Angdata_merge);
-            % save range-angle heatmap to .mat file
-            saved_file_name = strcat(saved_folder_name,'/',data_name,'_',num2str(i-frame_start,'%06d'),'.mat');
-            eval(['save(saved_file_name,''Angdata_merge'',''-v6'');'])
-
-            if i < frame_start + num_stored_figs % plot rectangle
-                posiObjCam = [agl_grid(cur_pos(2))-widthRec/2,rng_grid(cur_pos(1))-heigtRec/2];
-                hold on
-                plot_rectangle(posiObjCam,widthRec,heigtRec);
-                % save to figure
-                saved_fig_file_name = strcat(saved_fig_folder_name,'/','frame_',num2str(i,'%06d'),'.png');
-                eval(['saveas(axh,saved_fig_file_name,''png'');'])
-                close 
+            i % print index i
+        elseif option == 1
+            
+        elseif option == 2
+            %% record raw data in the form of matrix
+            for ir = 1:1
+                if i > frame_start-1
+                    saved_file_name = strcat(file_name,'_',num2str(i,'%03d'),'.mat');
+                    Xcube_chirp = [Xcube_chirp1,Xcube_chirp2];
+                    eval(['save(saved_file_name,''Xcube_chirp'',''-v6'');']);
+                else
+                end
             end
-        end
-    i % print index i    
-    end
-    end
-    elseif option == 2
-    %% record raw data in the form of matrix
-    for ir = 1:1
-        if i > frame_start-1
-            saved_file_name = strcat(data_name,'_',num2str(i,'%03d'),'.mat');
-            Xcube_chirp = [Xcube_chirp1,Xcube_chirp2];
-            eval(['save(saved_file_name,''Xcube_chirp'',''-v6'');']);
+        elseif option == 3
+            %% ran+dop+angle estimate
+            for ie = 1:1
+                % chirp1
+                % range fft
+                [Rangedata_chirp1]=range_fft(Xcube_chirp1,fft_Rang,fft_Vel,fft_Ang);
+                
+                % caliDcRangeSig
+                for anti = 1:4
+                    if rem(i,20) == 1
+                        caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp1(:,anti,:)),2)/loop;
+                    else
+                    end
+                    % remove DC
+                    Rangedata_chirp1(1:3,anti,:) = Rangedata_chirp1(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
+                        1,size(Rangedata_chirp1(1:3,anti,:),2),size(Rangedata_chirp1(1:3,anti,:),3));
+                end
+                
+                % doppler fft
+                Dopdata_chirp1 = doppler_fft(Rangedata_chirp1,fft_Rang,fft_Vel,fft_Ang);
+                figure()
+                mesh(vel_grid,rng_grid,abs(squeeze(Dopdata_chirp1(:,1,:))));
+                view(0,90)
+                axis([-10,10,0,25])
+                title('Range-doppler plot for Rx1')
+                xlabel('doppler')
+                ylabel('Range')
+                
+                %for chirp2
+                [Rangedata_chirp2]=range_fft(Xcube_chirp2,fft_Rang,fft_Vel,fft_Ang);
+                
+                % caliDcRangeSig
+                for anti = 1:4
+                    if rem(i,20) == 1
+                        caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp2(:,anti,:)),2)/loop;
+                    else
+                    end
+                    % remove DC
+                    Rangedata_chirp2(1:3,anti,:) = Rangedata_chirp2(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
+                        1,size(Rangedata_chirp2(1:3,anti,:),2),size(Rangedata_chirp2(1:3,anti,:),3));
+                end
+                
+                % doppler fft
+                Dopdata_chirp2 = doppler_fft(Rangedata_chirp2,fft_Rang,fft_Vel,fft_Ang);
+                % sum
+                Dopdata_sum = squeeze(sum(abs(Dopdata_chirp1)+abs(Dopdata_chirp2),2))/8;
+                
+                for rani = 4:fft_Rang     %%% from range 4(because the DC component in range1-3 have been canceled)
+                    x_detected = cfar_ca1D(Dopdata_sum(rani,:),4,3,4,1);
+                    x_dop = [x_dop,x_detected];
+                end
+                
+                % make unique
+                [C,~,~] = unique(x_dop(1,:));
+                
+                % CFAR for each specific doppler bin
+                for dopi = 1:size(C,2)
+                    y_detected = cfar_ca1D(Dopdata_sum(:,C(1,dopi)),4,4,3,0);
+                    if isempty(y_detected) ~= 1
+                        Resl_indx_temp = [C(1,dopi)*ones(1,size(y_detected,2));y_detected];%%% 1st doppler, 2st range, 3st object power(log2), 4th estimated noise
+                        Resl_indx = [Resl_indx,Resl_indx_temp];
+                    else
+                        
+                    end
+                end
+                
+                % delete the nodes which has -inf noiseSum
+                Resl_indx(:,isinf(Resl_indx(4,:))) = [];
+                
+                % Angle FFT
+                for angi = 1:size(Resl_indx,2)
+                    Dop_Antedata = [Dopdata_chirp1(Resl_indx(2,angi),:,Resl_indx(1,angi)),Dopdata_chirp2(Resl_indx(2,angi),:,Resl_indx(1,angi))];
+                    Angdata = angFFT(Dop_Antedata,fft_Ang);
+                    [~,I]=max(abs(Angdata));
+                    Resl_indx(5,angi) = I;
+                end
+            end
         else
+            
         end
     end
-    elseif option == 3
-    %% ran+dop+angle estimate
-    for ie = 1:1
-    % chirp1
-    % range fft
-    [Rangedata_chirp1]=range_fft(Xcube_chirp1,fft_Rang,fft_Vel,fft_Ang);
-
-    % caliDcRangeSig
-    for anti = 1:4
-        if rem(i,20) == 1
-            caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp1(:,anti,:)),2)/loop;
-        else
-        end
-        % remove DC
-        Rangedata_chirp1(1:3,anti,:) = Rangedata_chirp1(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
-            1,size(Rangedata_chirp1(1:3,anti,:),2),size(Rangedata_chirp1(1:3,anti,:),3));
-    end
-
-    % doppler fft
-    Dopdata_chirp1 = doppler_fft(Rangedata_chirp1,fft_Rang,fft_Vel,fft_Ang);
-    figure()
-    mesh(vel_grid,rng_grid,abs(squeeze(Dopdata_chirp1(:,1,:))));
-    view(0,90)
-    axis([-10,10,0,25])
-    title('Range-doppler plot for Rx1')
-    xlabel('doppler')
-    ylabel('Range')
-
-    %for chirp2
-    [Rangedata_chirp2]=range_fft(Xcube_chirp2,fft_Rang,fft_Vel,fft_Ang);
-
-    % caliDcRangeSig
-    for anti = 1:4
-        if rem(i,20) == 1
-            caliDcRange(:,anti) = sum(squeeze(Rangedata_chirp2(:,anti,:)),2)/loop;
-        else
-        end
-        % remove DC
-        Rangedata_chirp2(1:3,anti,:) = Rangedata_chirp2(1:3,anti,:) - repmat(caliDcRange(1:3,anti),...
-            1,size(Rangedata_chirp2(1:3,anti,:),2),size(Rangedata_chirp2(1:3,anti,:),3));
-    end
-
-    % doppler fft
-    Dopdata_chirp2 = doppler_fft(Rangedata_chirp2,fft_Rang,fft_Vel,fft_Ang);
-    % sum
-    Dopdata_sum = squeeze(sum(abs(Dopdata_chirp1)+abs(Dopdata_chirp2),2))/8;
-
-    for rani = 4:fft_Rang     %%% from range 4(because the DC component in range1-3 have been canceled)
-        x_detected = cfar_ca1D(Dopdata_sum(rani,:),4,3,4,1);
-        x_dop = [x_dop,x_detected];
-    end
-
-    % make unique
-    [C,~,~] = unique(x_dop(1,:));
-
-    % CFAR for each specific doppler bin
-    for dopi = 1:size(C,2)
-        y_detected = cfar_ca1D(Dopdata_sum(:,C(1,dopi)),4,4,3,0);
-        if isempty(y_detected) ~= 1
-            Resl_indx_temp = [C(1,dopi)*ones(1,size(y_detected,2));y_detected];%%% 1st doppler, 2st range, 3st object power(log2), 4th estimated noise
-            Resl_indx = [Resl_indx,Resl_indx_temp];
-        else
-
-        end
-    end
-
-    % delete the nodes which has -inf noiseSum
-    Resl_indx(:,isinf(Resl_indx(4,:))) = [];
-
-    % Angle FFT
-    for angi = 1:size(Resl_indx,2)
-        Dop_Antedata = [Dopdata_chirp1(Resl_indx(2,angi),:,Resl_indx(1,angi)),Dopdata_chirp2(Resl_indx(2,angi),:,Resl_indx(1,angi))];
-        Angdata = angFFT(Dop_Antedata,fft_Ang);
-        [~,I]=max(abs(Angdata));
-        Resl_indx(5,angi) = I;
-    end
-    end
-    else
-
-    end
-    end
-
-    if IS_SAVE_Data
-    dlmwrite(saved_pos_file_name,obj_pos_value);
-    end
+    
+end
 end
