@@ -22,6 +22,7 @@ Xsnr=Xpow;
 % Xsnr = pow2db(Xpow/noisefloor);
 
 figure('visible','off')
+% figure()
 set(gcf,'Position',[10,10,530,420])
 [axh] = surf(agl_grid,rng_grid,Xsnr);
 view(0,90)
@@ -32,9 +33,6 @@ xlabel('Angle of arrive(degrees)')
 ylabel('Range(meters)')
 colorbar
 caxis([0,1])
-%     caxis([1.0e+14*0.0000,1.0e+15*7.8229])
-
-
 title('Range-Angle heatmap')
 
 end

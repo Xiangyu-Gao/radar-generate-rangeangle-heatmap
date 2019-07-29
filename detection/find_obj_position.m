@@ -17,8 +17,8 @@ if IS_Find_Init_Pos % IS_Find_Init_Pos=1 ==>find the initial object position in 
     ang_max = Ne;
 else %IS_Find_Init_Pos=0 ==>find the current object position in Range-Angle heatmap given the initial position
     % init_pos format [Range,Angle]
-    ran_width = 2;% search width for range
-    ang_width = 2;% search width for angle
+    ran_width = 3;% search width for range
+    ang_width = 3;% search width for angle
     ran_min = max(init_pos(1)-ran_width,4);
     ran_max = min(init_pos(1)+ran_width,Nr);
     ang_min = max(init_pos(2)-ang_width,1);

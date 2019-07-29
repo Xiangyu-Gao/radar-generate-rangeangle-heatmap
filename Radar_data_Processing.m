@@ -40,7 +40,7 @@ option = 0; % option=0,only plot ang-range; option=1,
 IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
 IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
-Is_Windowed = 0;% 1==> Windowing before doing range and angle fft
+Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
 num_stored_figs = 900;% the number of figures that are going to be stored
 
 %% file information
