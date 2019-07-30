@@ -39,7 +39,8 @@ dop_grid = fftshiftfreqgrid(fft_Vel,1/Tc); % now fs is equal to 1/Tc
 vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs],
                                 % dopgrid = [-fs/2,fs/2]
 
-capture_date_list = ["2019_04_09"];
+capture_date_list = ["2019_04_09", "2019_04_30", "2019_05_09", ...
+    "2019_05_23", "2019_05_28", "2019_05_29"];
 
 for ida = 1:length(capture_date_list)
     capture_date = capture_date_list(ida);
@@ -99,6 +100,7 @@ for ida = 1:length(capture_date_list)
                 if isempty(Cam_rest)
                     
                 else
+                IF_HAS_PLOT = 0;
                 for icr = 1:size(Cam_rest,1)
                     % get object class
                     if Cam_rest(icr,1) == 0
@@ -122,7 +124,7 @@ for ida = 1:length(capture_date_list)
                     % get object tracking id
                     obj_id = Cam_rest(icr,17);
                     
-                    if obj_Range > 26 % ingore the objets whose range is 
+                    if obj_Range > 26.1 % ingore the objets whose range is 
                                         %greater than 26m
                     else
                 %% Detect objects in radar images
@@ -137,6 +139,7 @@ for ida = 1:length(capture_date_list)
                     if icr == 1
                         [axh] = plot_rangeAng(Angdata, ...
                             rng_grid, agl_grid);
+                        IF_HAS_PLOT = 1;
                         % plot cut out area
                         posiObjCam = [agl_grid(cur_pos(2))-widthRec/2, ...
                             rng_grid(cur_pos(1))-heigtRec/2];
@@ -146,6 +149,22 @@ for ida = 1:length(capture_date_list)
                         txt = strcat('id: ', num2str(obj_id));
                         text(agl_grid(cur_pos(2))-10, ...
                             rng_grid(cur_pos(1))+1,1,txt,'Color','r');
+                    
+                    elseif IF_HAS_PLOT == 0
+                        % replot the heatmap since the first one is ignored
+                        [axh] = plot_rangeAng(Angdata, ...
+                            rng_grid, agl_grid);
+                        IF_HAS_PLOT = 1;
+                        % plot cut out area
+                        posiObjCam = [agl_grid(cur_pos(2))-widthRec/2, ...
+                            rng_grid(cur_pos(1))-heigtRec/2];
+                        hold on
+                        plot_rectangle(posiObjCam, widthRec, heigtRec, colorid);
+                        % text id on heatmap
+                        txt = strcat('id: ', num2str(obj_id));
+                        text(agl_grid(cur_pos(2))-10, ...
+                            rng_grid(cur_pos(1))+1,1,txt,'Color','r');
+                    
                     else
                         % plot cut out area
                         posiObjCam = [agl_grid(cur_pos(2))-widthRec/2, ...
@@ -164,10 +183,18 @@ for ida = 1:length(capture_date_list)
                         '_', num2str(obj_id,'%02d'), '.mat');
                     saved_chunk_location = strcat(file_location_saveddata, ...
                         saved_chunk_name);
-                    saved_data = Angdata(cur_pos(1)-heigtBins/2: ...
-                        cur_pos(1)+heigtBins/2, cur_pos(2)-widthBins/2: ...
-                        cur_pos(2)+widthBins/2,:);
-                    save(saved_chunk_location,'saved_data','-v6'); 
+                    
+                    if cur_pos(1)-heigtBins/2 < 1 || cur_pos(1)+heigtBins/2 ...
+                            > 122 || cur_pos(2)-widthBins/2 < 1 || cur_pos(2) ...
+                            +widthBins/2 > 91
+                        
+                    else
+                        saved_data = Angdata(cur_pos(1)-heigtBins/2: ...
+                            cur_pos(1)+heigtBins/2, cur_pos(2)-widthBins/2: ...
+                            cur_pos(2)+widthBins/2,:);
+                        save(saved_chunk_location,'saved_data','-v6'); 
+                    end
+                    
                     else
                     end
                     
@@ -175,7 +202,7 @@ for ida = 1:length(capture_date_list)
                 end
                 
                 %% save the heatmap image with all boudning boxes
-                if IS_SAVE_Data
+                if IS_SAVE_Data & IF_HAS_PLOT
                     saved_image_name = strcat(file_location_savedimage, ...
                         file_name, '_',num2str(frame_index,'%06d'),'.png');
                     saveas(axh,saved_image_name,'png');
