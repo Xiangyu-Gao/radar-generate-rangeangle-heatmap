@@ -12,7 +12,7 @@ for ida = 1:length(capture_date_list)
     files = dir(folder_location_data); % find all the files under the folder
     n_files = length(files);
     
-    for inum = 3:n_files
+    for inum = 9:9
         file_name = files(inum).name;
         % generate file name and folder
         file_location_data = strcat(folder_location_data, file_name,'/');
