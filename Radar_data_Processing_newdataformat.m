@@ -10,12 +10,12 @@ Rx = 4;
 Tx = 2;
 
 % configuration parameters
-Fs = 4*10^6;
-sweepSlope = 21.0017e12;
-samples = 128;
+Fs = 11*10^6;
+sweepSlope = 33.023e12;
+samples = 256;
 loop = 255;
-Tc = 120e-6; %us
-fft_Rang = 128;
+Tc = 66e-6; %us
+fft_Rang = 256;
 fft_Vel = 256;
 fft_Ang = 91;
 
@@ -38,17 +38,17 @@ frame_end = 900;
 option = 0; % option=0,only plot ang-range; option=1, 
 % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
 IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
-IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
+IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 0;% 1==> Windowing before doing range and angle fft
 num_stored_figs = 900;% the number of figures that are going to be stored
 
 %% file information
-capture_date_list = ["2019_08_01"];
+capture_date_list = ["2019_08_14"];
 
 for ida = 1:length(capture_date_list)
 capture_date = capture_date_list(ida);
-folder_location = strcat('F:/RawData/', capture_date, '/');
+folder_location = strcat('D:/RawData/', capture_date, '/');
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
@@ -72,6 +72,7 @@ for index = 1:length(processed_files)
     file_name = files(inum).name;
     % generate file name and folder
     file_location = strcat(folder_location,'/',file_name,'/rad_reo_zerf/');
+    
     for ign = 1:1
         if option == 0 && Is_Windowed == 0
             saved_folder_name = strcat('F:/Processed_data/UNWINDOWED/',capture_date,'/',file_name);

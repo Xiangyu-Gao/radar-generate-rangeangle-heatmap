@@ -10,6 +10,7 @@ numRX = 4; % number of receivers
 numLanes = 2; % do not change. number of lanes is always 2
 isReal = 0; % set to 1 if real only data, 0 if complex data0
 %% read file
+% search all files under this folder
 % read .bin file
 fid = fopen(fileName,'r');
 adcData = fread(fid, 'int16');
