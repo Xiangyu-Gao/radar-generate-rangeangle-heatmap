@@ -1,7 +1,7 @@
 %%% This script is used to read the binary file produced by the DCA1000
 %%% and Mmwave Studio
 %%% Command to run in Matlab GUI -readDCA1000('<ADC capture bin file>') 
-function [retVal] = readDCA1000(fileName)
+function [retVal] = readDCA1000(folder_locaion, numADCSamples)
 %% global variables
 % change based on sensor config
 numADCSamples = 128; % number of ADC samples per chirp
@@ -9,11 +9,23 @@ numADCBits = 16; % number of ADC bits per sample
 numRX = 4; % number of receivers
 numLanes = 2; % do not change. number of lanes is always 2
 isReal = 0; % set to 1 if real only data, 0 if complex data0
+adcData = [];
 %% read file
 % search all files under this folder
-% read .bin file
-fid = fopen(fileName,'r');
-adcData = fread(fid, 'int16');
+files = dir(folder_locaion); % find all the files under the folder
+n_files = length(files);
+processed_files = [3:n_files];
+
+for index = 1:length(processed_files)
+    inum = processed_files(index);
+    file_name = files(inum).name;
+    file_location = strcat(folder_locaion,'/',file_name);
+    % read .bin file
+    fid = fopen(file_location,'r');
+    adcData_tmp = fread(fid, 'int16');
+    adcData = [adcData; adcData_tmp];
+end
+
 % if 12 or 14 bits ADC per sample compensate for sign extension
 if numADCBits ~= 16
     l_max = 2^(numADCBits-1)-1;

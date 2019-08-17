@@ -91,7 +91,7 @@ for index = 1:length(processed_files)
     end
     
     %% read the data file
-    data = readDCA1000(file_location);
+    data = readDCA1000(file_location, samples);
     data_length = length(data);
     data_each_frame = samples*loop*Tx;
     Frame_num = data_length/data_each_frame;
