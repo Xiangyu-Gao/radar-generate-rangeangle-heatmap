@@ -26,7 +26,8 @@ figure()
 set(gcf,'Position',[10,10,530,420])
 [axh] = surf(agl_grid,rng_grid,Xsnr);
 view(0,90)
-axis([-90 90 0 25]);
+% axis([-90 90 0 25]);
+axis([-60 60 1 25]);
 grid off
 shading interp
 xlabel('Angle of arrive(degrees)')
