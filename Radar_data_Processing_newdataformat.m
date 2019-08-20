@@ -18,6 +18,7 @@ Tc = 66e-6; %us
 fft_Rang = 256;
 fft_Vel = 256;
 fft_Ang = 91;
+num_crop = 3;
 
 % Creat grid table
 freq_res = Fs/fft_Rang;% range_grid
@@ -33,13 +34,13 @@ vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs], dopgrid = [-f
 
 
 % Algorithm parameters
-frame_start = 1;
+frame_start = 100;
 frame_end = 900;
 option = 0; % option=0,only plot ang-range; option=1, 
 % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
-IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
+IS_Plot_RD = 1; % 1 ==> plot the Range-Doppler heatmap
 IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
-Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
+Is_Det_Static = 0;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
 num_stored_figs = 900;% the number of figures that are going to be stored
 
@@ -64,7 +65,7 @@ elseif contains(capture_date, '04_30')
 elseif contains(capture_date, '05_09')
     processed_files = [3:5,7:16] %0509
 else
-    processed_files = [21:n_files] %0529,0529,0523
+    processed_files = [8:n_files] %0529,0529,0523
 end
 
 for index = 1:length(processed_files)
@@ -151,11 +152,14 @@ for index = 1:length(processed_files)
             % need to do doppler compensation on Rangedata_chirp2 in future
             Rangedata_merge = [Rangedata_odd,Rangedata_even];
             Angdata = fft_angle(Rangedata_merge,fft_Ang,Is_Windowed);
-            Angdata_crop = Angdata(4:fft_Rang-3,:,:);
-            [Angdata_crop] = Normalize(Angdata_crop);
+            % remove static objects
+%             Angdata = Angdata - sum(Angdata,3)/size(Angdata,3);
+            Angdata_crop = Angdata(num_crop + 1:fft_Rang - num_crop,:,:);
+            [Angdata_crop] = Normalize(Angdata_crop, max_value);
             
             if i < frame_start + num_stored_figs % plot Range_Angle heatmap
-                [axh] = plot_rangeAng(Angdata_crop,rng_grid(4:fft_Rang-3),agl_grid);
+                [axh] = plot_rangeAng(Angdata_crop, ...
+                    rng_grid(num_crop + 1:fft_Rang - num_crop),agl_grid);
             end
             
             if IS_SAVE_Data
@@ -168,7 +172,7 @@ for index = 1:length(processed_files)
 %                     hold on
 %                     plot_rectangle(posiObjCam,widthRec,heigtRec);
                     % save to figure
-                    saved_fig_file_name = strcat(saved_fig_folder_name,'/','frame_',num2str(i,'%06d'),'.png');
+                    saved_fig_file_name = strcat(saved_fig_folder_name,'/','frame_',num2str(i-1,'%06d'),'.png');
                     saveas(axh,saved_fig_file_name,'png');
                     close
                 end

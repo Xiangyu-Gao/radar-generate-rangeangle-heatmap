@@ -4,7 +4,7 @@
 function [retVal] = readDCA1000(folder_locaion, numADCSamples)
 %% global variables
 % change based on sensor config
-numADCSamples = 128; % number of ADC samples per chirp
+% numADCSamples = 128; % number of ADC samples per chirp should be variable
 numADCBits = 16; % number of ADC bits per sample
 numRX = 4; % number of receivers
 numLanes = 2; % do not change. number of lanes is always 2
