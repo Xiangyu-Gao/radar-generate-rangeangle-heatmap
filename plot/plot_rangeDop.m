@@ -1,10 +1,16 @@
 % plot the range-doppler heatmap for antenna 1
-function [] = plot_rangeDop(Dopdata_chirp1,vel_grid,rng_grid)
+function [axh] = plot_rangeDop(Dopdata_chirp1,vel_grid,rng_grid)
+% figure('visible','off')
 figure()
-mesh(vel_grid,rng_grid,20*log10(abs(squeeze(Dopdata_chirp1(:,1,:)))));
+set(gcf,'Position',[10,10,530,420])
+[axh] = surf(vel_grid,rng_grid,20*log2(abs(squeeze(Dopdata_chirp1(:,1,:)))));
 view(0,90)
-axis([-10,10,0,28])
-title('Range-doppler plot for Rx1')
-xlabel('doppler')
+axis([-8,8,0,28])
+grid off
+shading interp
+title('Range-Velocity plot')
+xlabel('Velocity')
 ylabel('Range')
+colorbar
+caxis([0,300])
 end

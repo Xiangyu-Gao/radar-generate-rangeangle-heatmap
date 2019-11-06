@@ -8,6 +8,7 @@ function [retVal] = readDCA1000(folder_locaion, numADCSamples)
 numADCBits = 16; % number of ADC bits per sample
 numRX = 4; % number of receivers
 numLanes = 2; % do not change. number of lanes is always 2
+max_numChirps = 459000;
 isReal = 0; % set to 1 if real only data, 0 if complex data0
 adcData = [];
 %% read file
@@ -57,15 +58,39 @@ else
     % create column for each chirp
     LVDS = reshape(LVDS, numADCSamples*numRX, numChirps);
     %each row is data from one chirp
-    LVDS = LVDS.';
+%     LVDS = LVDS.'; % make comment to avoid the 'out of memory'
 end
-%organize data per RX
-adcData = zeros(numRX,numChirps*numADCSamples);
-for row = 1:numRX
-    for i = 1: numChirps
-        adcData(row, (i-1)*numADCSamples+1:i*numADCSamples) = LVDS(i,(row-1)*numADCSamples+1:row*numADCSamples);
+
+% organize data per RX
+clear adcData
+clear adcData_tmp
+if numChirps <= max_numChirps % 900 frames  
+    adcData = zeros(numRX,numChirps*numADCSamples);
+    for row = 1:numRX
+        for i = 1: numChirps
+            adcData(row, (i-1)*numADCSamples+1:i*numADCSamples) = LVDS((row-1)*numADCSamples+1:row*numADCSamples,i);
+        end
     end
-end
+    retVal = adcData;
+else
+    adcData1 = zeros(numRX,max_numChirps*numADCSamples);
+    for row = 1:numRX
+        for i = 1:max_numChirps
+            adcData1(row, (i-1)*numADCSamples+1:i*numADCSamples) = LVDS((row-1)*numADCSamples+1:row*numADCSamples,i);
+        end
+    end
+    
+    left_numChirps = numChirps - max_numChirps;
+    adcData2 = zeros(numRX,left_numChirps*numADCSamples);
+    for row = 1:numRX
+        for i = 1:left_numChirps
+            adcData2(row, (i-1)*numADCSamples+1:i*numADCSamples) = LVDS((row-1)*numADCSamples+1:row*numADCSamples,i+max_numChirps);
+        end
+    end
+    
+    clear LVDS
+    retVal = [adcData1, adcData2];
+    
 % return receiver data
 % data format is [Rx; chirps]
-retVal = adcData;
+end

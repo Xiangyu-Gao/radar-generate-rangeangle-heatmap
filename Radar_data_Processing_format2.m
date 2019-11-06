@@ -10,17 +10,16 @@ Rx = 4;
 Tx = 2;
 
 % configuration parameters
-Fs = 4*10^6;
-sweepSlope = 21.0017e12;
-samples = 128;
+Fs = 11*10^6;
+sweepSlope = 33.023e12;
+samples = 256;
 loop = 255;
-set_frame_number = 1800;
-Tc = 90e-6; %us % previous 120us 
-fft_Rang = 134; % 134=>128
+Tc = 66e-6; %us
+fft_Rang = 256;
 fft_Vel = 256;
 fft_Ang = 128;
 num_crop = 3;
-max_value = 1e+04; % data WITH 1843
+max_value = 1e+04;
 
 % Creat grid table
 freq_res = Fs/fft_Rang;% range_grid
@@ -34,44 +33,54 @@ agl_grid = asin(w)*180/pi; % [-1,1]->[-pi/2,pi/2]
 dop_grid = fftshiftfreqgrid(fft_Vel,1/Tc); % now fs is equal to 1/Tc
 vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs], dopgrid = [-fs/2,fs/2]
 
+% reference grid
+ref_freq_grid = (0:134-1).'*2.9851e+04;
+ref_rng_grid = ref_freq_grid*c/21.0017e12/2;% d=frediff_grid*c/sweepSlope/2;
 
 % Algorithm parameters
 frame_start = 1;
-frame_end = set_frame_number;
+frame_end = 900;
 option = 0; % option=0,only plot ang-range; option=1, 
 % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
 IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
 IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
-num_stored_figs = set_frame_number;% the number of figures that are going to be stored
+num_stored_figs = 900;% the number of figures that are going to be stored
 
 %% file information
-capture_date_list = ["2019_10_13"];
+capture_date_list = ["2019_07_18", "2019_07_25", "2019_08_14"];
 
 for ida = 1:length(capture_date_list)
 capture_date = capture_date_list(ida);
-folder_location = strcat('/mnt/nas_crdataset2/', capture_date, '/');
+folder_location = strcat('/mnt/nas_crdataset/', capture_date, '/');
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-processed_files = [51:n_files]
+% processed_files = [3:7,9:14,16:21] %0430
+% processed_files = [3:7,9:14,16:21] %0430
+% processed_files = [3:5,7:16] %0509
+% processed_files = [3:n_files] %0528 
+% processed_files = [3:n_files] %0529
 
-% if contains(capture_date, '04_09')
-%     processed_files = [3:14,18] %0409
-% elseif contains(capture_date, '04_30')
-%     processed_files = [3:7,9:14,16:21] %0430
-% elseif contains(capture_date, '05_09')
-%     processed_files = [3:5,7:16] %0509
-% else
-%     processed_files = [3:n_files] %0529,0529,0523
-% end
+if contains(capture_date, '04_09')
+    processed_files = [3:14,18] %0409
+elseif contains(capture_date, '04_30')
+    processed_files = [3:7,9:14,16:21] %0430
+elseif contains(capture_date, '05_09')
+    processed_files = [3:5,7:16] %0509
+elseif contains(capture_date, '07_18')
+    processed_files = [3:12,15:17] %0718
+else
+    processed_files = [3:n_files] %0529,0529,0523
+end
 
 for index = 1:length(processed_files)
     inum = processed_files(index);
     file_name = files(inum).name;
     % generate file name and folder
-    file_location = strcat(folder_location,file_name,'/rad_reo_zerf_h/');
+    file_location = strcat(folder_location,'/',file_name,'/rad_reo_zerf/');
+    
     for ign = 1:1
         if option == 0 && Is_Windowed == 0
             saved_folder_name = strcat(folder_location,file_name, ...
@@ -100,15 +109,15 @@ for index = 1:length(processed_files)
     Frame_num = data_length/data_each_frame;
     
     % check whether Frame number is an integer
-    if Frame_num == set_frame_number
+    if Frame_num == 900
         frame_end = Frame_num;
-    elseif abs(Frame_num - set_frame_number) < 30
+    elseif abs(Frame_num - 900) < 30
         fprintf('Error! Frame is not complete')
-        frame_start = set_frame_number - fix(Frame_num) + 1;
+        frame_start = 900 - fix(Frame_num) + 1;
         % zero fill the data
-        num_zerochirp_fill = set_frame_number*data_each_frame - data_length;
+        num_zerochirp_fill = 900*data_each_frame - data_length;
         data = [zeros(4,num_zerochirp_fill), data];
-    elseif abs(Frame_num - set_frame_number) >= 30 && Frame_num == fix(Frame_num)
+    elseif abs(Frame_num - 900) >= 30 && Frame_num == fix(Frame_num)
         frame_end = Frame_num;
     else
     end
@@ -151,14 +160,22 @@ for index = 1:length(processed_files)
             
             % Angle FFT
             % need to do doppler compensation on Rangedata_chirp2 in future
-            Rangedata_merge = [Rangedata_odd, Rangedata_even];
+            Rangedata_merge = [Rangedata_odd,Rangedata_even];
             Angdata = fft_angle(Rangedata_merge,fft_Ang,Is_Windowed);
-            Angdata_crop = Angdata(num_crop + 1:fft_Rang - num_crop,:,:);
-            [Angdata_crop] = Normalize(Angdata_crop, max_value);
+            Angdata_map = [];
+            
+            % map the Angdata from current grid to ref grid
+            for mi = 1:128
+                sear_val = ref_rng_grid(mi+num_crop,1);
+                [miv, mid] = min(abs(rng_grid - sear_val));
+                Angdata_map(mi,:,:) = Angdata(mid,:,:);
+            end
+
+            [Angdata_crop] = Normalize(Angdata_map, max_value);
             
             if i < frame_start + num_stored_figs % plot Range_Angle heatmap
                 [axh] = plot_rangeAng(Angdata_crop, ...
-                    rng_grid(num_crop + 1:fft_Rang - num_crop),agl_grid);
+                    ref_rng_grid(num_crop + 1:num_crop + 128),agl_grid);
             end
             
             if IS_SAVE_Data
@@ -176,12 +193,10 @@ for index = 1:length(processed_files)
                 end
             end
             i % print index i
-        elseif option == 1
-          
         else
             
         end
     end
-    clear data
+    
 end
 end

@@ -40,22 +40,22 @@ frame_start = 1;
 frame_end = set_frame_number;
 option = 0; % option=0,only plot ang-range; option=1, 
 % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
-IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
-IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
+IS_Plot_RD = 1; % 1 ==> plot the Range-Doppler heatmap
+IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
 num_stored_figs = set_frame_number;% the number of figures that are going to be stored
 
 %% file information
-capture_date_list = ["2019_10_13"];
+capture_date_list = ["2019_09_18"];
 
 for ida = 1:length(capture_date_list)
 capture_date = capture_date_list(ida);
-folder_location = strcat('/mnt/nas_crdataset2/', capture_date, '/');
+folder_location = strcat('/mnt/nas_crdataset/', capture_date, '/');
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-processed_files = [51:n_files]
+processed_files = [22:n_files]
 
 % if contains(capture_date, '04_09')
 %     processed_files = [3:14,18] %0409
@@ -138,7 +138,7 @@ for index = 1:length(processed_files)
             % Check whether to plot range-doppler heatmap
             if IS_Plot_RD
                 % Doppler FFT
-                [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel,Is_Windowed);
+                [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel);
                 % plot range-doppler
                 plot_rangeDop(Dopdata_odd,vel_grid,rng_grid)
             else
