@@ -42,7 +42,7 @@ vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs],
 % vel_grid=3.6*vel_grid;        % unit: km/h
 
 %% read file information
-capture_date_list = ["2019_09_18"];
+capture_date_list = ["useful"];
 
 for ida = 1:length(capture_date_list)
     capture_date = capture_date_list(ida);
@@ -55,7 +55,7 @@ for ida = 1:length(capture_date_list)
     files = dir(folder_location_data); % find all the files under the folder
     n_files = length(files);
     
-    for inum = 4:4
+    for inum = 3:n_files
         file_name = files(inum).name;
         % generate file name and folder
         file_location_data = strcat(folder_location_data, file_name,'/');
@@ -73,8 +73,7 @@ for ida = 1:length(capture_date_list)
         
         sub_files = dir(file_location_data);
         
-%         for ifa = 3:length(sub_files)
-        for ifa = 2857:8704
+        for ifa = 3:length(sub_files)
             sub_file_name = sub_files(ifa).name;
             sub_file_location = strcat(file_location_data, sub_file_name);
 

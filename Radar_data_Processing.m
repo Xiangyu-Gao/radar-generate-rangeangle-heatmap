@@ -1,3 +1,6 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% For new data format (Tc = 90e-6 us)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clc;
 clear all;
 close all;
@@ -47,7 +50,7 @@ Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
 num_stored_figs = set_frame_number;% the number of figures that are going to be stored
 
 %% file information
-capture_date_list = ["2019_10_13"];
+capture_date_list = ["2019_11_27"];
 
 for ida = 1:length(capture_date_list)
 capture_date = capture_date_list(ida);
@@ -55,7 +58,7 @@ folder_location = strcat('/mnt/nas_crdataset2/', capture_date, '/');
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-processed_files = [51:n_files]
+processed_files = [3:n_files]
 
 % if contains(capture_date, '04_09')
 %     processed_files = [3:14,18] %0409

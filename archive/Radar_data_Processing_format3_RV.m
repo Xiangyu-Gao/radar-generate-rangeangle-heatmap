@@ -1,3 +1,6 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% For new data format (Tc = 90e-6 us)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clc;
 clear all;
 close all;
@@ -10,16 +13,17 @@ Rx = 4;
 Tx = 2;
 
 % configuration parameters
-Fs = 11*10^6;
-sweepSlope = 33.023e12;
-samples = 256;
+Fs = 4*10^6;
+sweepSlope = 21.0017e12;
+samples = 128;
 loop = 255;
-Tc = 66e-6; %us
-fft_Rang = 256;
+set_frame_number = 1800;
+Tc = 90e-6; %us % previous 120us 
+fft_Rang = 134; % 134=>128
 fft_Vel = 256;
 fft_Ang = 128;
 num_crop = 3;
-max_value = 1e+04;
+max_value = 1e+04; % data WITH 1843
 
 % Creat grid table
 freq_res = Fs/fft_Rang;% range_grid
@@ -33,65 +37,54 @@ agl_grid = asin(w)*180/pi; % [-1,1]->[-pi/2,pi/2]
 dop_grid = fftshiftfreqgrid(fft_Vel,1/Tc); % now fs is equal to 1/Tc
 vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs], dopgrid = [-fs/2,fs/2]
 
-% reference grid
-ref_freq_grid = (0:134-1).'*2.9851e+04;
-ref_rng_grid = ref_freq_grid*c/21.0017e12/2;% d=frediff_grid*c/sweepSlope/2;
 
 % Algorithm parameters
 frame_start = 1;
-frame_end = 900;
+frame_end = set_frame_number;
 option = 0; % option=0,only plot ang-range; option=1, 
 % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
-IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
+IS_Plot_RD = 1; % 1 ==> plot the Range-Doppler heatmap
 IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
-num_stored_figs = 900;% the number of figures that are going to be stored
+num_stored_figs = set_frame_number;% the number of figures that are going to be stored
 
 %% file information
-capture_date_list = ["2019_07_18", "2019_07_25", "2019_08_14"];
+capture_date_list = ["2019_09_29"];
 
 for ida = 1:length(capture_date_list)
 capture_date = capture_date_list(ida);
 folder_location = strcat('/mnt/nas_crdataset/', capture_date, '/');
+store_folder_location = strcat('/media/admin-cmmb/Elements/CRdataset/', capture_date, '/');
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-% processed_files = [3:7,9:14,16:21] %0430
-% processed_files = [3:7,9:14,16:21] %0430
-% processed_files = [3:5,7:16] %0509
-% processed_files = [3:n_files] %0528 
-% processed_files = [3:n_files] %0529
+processed_files = [41:n_files]
 
-if contains(capture_date, '04_09')
-    processed_files = [3:14,18] %0409
-elseif contains(capture_date, '04_30')
-    processed_files = [3:7,9:14,16:21] %0430
-elseif contains(capture_date, '05_09')
-    processed_files = [3:5,7:16] %0509
-elseif contains(capture_date, '07_18')
-    processed_files = [3:12,15:17] %0718
-else
-    processed_files = [3:n_files] %0529,0529,0523
-end
+% if contains(capture_date, '04_09')
+%     processed_files = [3:14,18] %0409
+% elseif contains(capture_date, '04_30')
+%     processed_files = [3:7,9:14,16:21] %0430
+% elseif contains(capture_date, '05_09')
+%     processed_files = [3:5,7:16] %0509
+% else
+%     processed_files = [3:n_files] %0528,0529,0523
+% end
 
 for index = 1:length(processed_files)
     inum = processed_files(index);
     file_name = files(inum).name;
     % generate file name and folder
-    file_location = strcat(folder_location,'/',file_name,'/rad_reo_zerf/');
-    
+%     file_location = strcat(folder_location,file_name,'/rad_reo_zerf/');
+    file_location = strcat(folder_location,file_name,'/rad_reo_zerf_h/');
     for ign = 1:1
         if option == 0 && Is_Windowed == 0
-            saved_folder_name = strcat(folder_location,file_name, ...
-                '/UNWIN_PROC_MAT_DATA/');
-            saved_fig_folder_name = strcat(folder_location,file_name, ...
-                '/UNWIN_HEATMAP/');
+
         elseif option == 0 && Is_Windowed == 1
-            saved_folder_name = strcat(folder_location,file_name, ...
-                '/WIN_PROC_MAT_DATA/');
-            saved_fig_folder_name = strcat(folder_location,file_name, ...
-                '/WIN_HEATMAP/');
+            saved_folder_name = strcat(store_folder_location,file_name, ...
+                '/WIN_RV_MAT/');
+            saved_fig_folder_name = strcat(store_folder_location,file_name, ...
+                '/WIN_RV_HEATMAP/');
         end
         
         if ~exist(saved_folder_name, 'dir') % check the folder exist
@@ -109,21 +102,18 @@ for index = 1:length(processed_files)
     Frame_num = data_length/data_each_frame;
     
     % check whether Frame number is an integer
-    if Frame_num == 900
+    if Frame_num == set_frame_number
         frame_end = Frame_num;
-    elseif abs(Frame_num - 900) < 30
+    elseif abs(Frame_num - set_frame_number) < 30
         fprintf('Error! Frame is not complete')
-        frame_start = 900 - fix(Frame_num) + 1;
+        frame_start = set_frame_number - fix(Frame_num) + 1;
         % zero fill the data
-        num_zerochirp_fill = 900*data_each_frame - data_length;
+        num_zerochirp_fill = set_frame_number*data_each_frame - data_length;
         data = [zeros(4,num_zerochirp_fill), data];
-    elseif abs(Frame_num - 900) >= 30 && Frame_num == fix(Frame_num)
+    elseif abs(Frame_num - set_frame_number) >= 30 && Frame_num == fix(Frame_num)
         frame_end = Frame_num;
     else
     end
-    
-    caliDcRange_odd = [];
-    caliDcRange_even = [];
     
     for i = frame_start:frame_end
         % reshape data of each frame to the format [samples, Rx, chirp]
@@ -143,46 +133,49 @@ for index = 1:length(processed_files)
             % FOR CHIRP 1
             % Range FFT
             [Rangedata_odd] = fft_range(chirp_odd,fft_Rang,Is_Windowed);
+            % Doppler FFT
+            [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel,Is_Windowed);
+                        
+            % FOR CHIRP 2
+            % Range FFT
+            [Rangedata_even] = fft_range(chirp_even,fft_Rang,Is_Windowed);
+            % Doppler FFT
+            [Dopdata_even] = fft_doppler(Rangedata_even,fft_Vel,Is_Windowed);
             
             % Check whether to plot range-doppler heatmap
-            if IS_Plot_RD
-                % Doppler FFT
-                [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel,Is_Windowed);
+            if IS_Plot_RD            
                 % plot range-doppler
-                plot_rangeDop(Dopdata_odd,vel_grid,rng_grid)
+                [axh] = plot_rangeDop(Dopdata_odd(num_crop + 1:fft_Rang - num_crop,:,:),...
+                    vel_grid,rng_grid(num_crop + 1:fft_Rang - num_crop));
             else
                 
             end
             
-            % FOR CHIRP 2
-            % Range FFT
-            [Rangedata_even] = fft_range(chirp_even,fft_Rang,Is_Windowed);
-            
-            % Angle FFT
-            % need to do doppler compensation on Rangedata_chirp2 in future
-            Rangedata_merge = [Rangedata_odd,Rangedata_even];
-            Angdata = fft_angle(Rangedata_merge,fft_Ang,Is_Windowed);
-            Angdata_map = [];
-            
-            % map the Angdata from current grid to ref grid
-            for mi = 1:128
-                sear_val = ref_rng_grid(mi+num_crop,1);
-                [miv, mid] = min(abs(rng_grid - sear_val));
-                Angdata_map(mi,:,:) = Angdata(mid,:,:);
-            end
+%             % Angle FFT
+%             % need to do doppler compensation on Rangedata_chirp2 in future
+%             Rangedata_merge = [Rangedata_odd, Rangedata_even];
+%             Angdata = fft_angle(Rangedata_merge,fft_Ang,Is_Windowed);
+%             Angdata_crop = Angdata(num_crop + 1:fft_Rang - num_crop,:,:);
+%             [Angdata_crop] = Normalize(Angdata_crop, max_value);
+%             
+%             if i < frame_start + num_stored_figs % plot Range_Angle heatmap
+%                 [axh] = plot_rangeAng(Angdata_crop, ...
+%                     rng_grid(num_crop + 1:fft_Rang - num_crop),agl_grid);
+%             end
 
-            [Angdata_crop] = Normalize(Angdata_map, max_value);
-            
-            if i < frame_start + num_stored_figs % plot Range_Angle heatmap
-                [axh] = plot_rangeAng(Angdata_crop, ...
-                    ref_rng_grid(num_crop + 1:num_crop + 128),agl_grid);
-            end
+            % Normalize Range-Velocity data cube ./e+05
+            RV_data = cat(2, Dopdata_odd(num_crop + 1:fft_Rang - num_crop,:,:),...
+                Dopdata_even(num_crop + 1:fft_Rang - num_crop,:,:));
+            RV_data = RV_data/1e+05;
             
             if IS_SAVE_Data
                 % save range-angle heatmap to .mat file
                 saved_file_name = strcat(saved_folder_name,'/', ...
                     file_name,'_',num2str(i-1,'%06d'),'.mat');
-                save(saved_file_name,'Angdata_crop','-v6');
+                
+                save(saved_file_name,'RV_data','-v6');
+
+                
                 
                 if i < frame_start + num_stored_figs % plot rectangle
                     % save to figure
@@ -193,10 +186,21 @@ for index = 1:length(processed_files)
                 end
             end
             i % print index i
+        elseif option == 1
+          
         else
             
         end
     end
+    clear data
+    clear data_frame
+    clear chirp_even
+    clear chirp_odd
+    clear Dopdata_even
+    clear Dopdata_odd
+    clear Rangedata_even
+    clear Rangedata_odd
+    clear RV_data
     
 end
 end

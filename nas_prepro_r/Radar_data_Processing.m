@@ -1,6 +1,3 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% For old data format (Tc = 120e-6 us)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clc;
 clear all;
 close all;
@@ -17,8 +14,8 @@ Fs = 4*10^6;
 sweepSlope = 21.0017e12;
 samples = 128;
 loop = 255;
-set_frame_number = 900;
-Tc = 120e-6; %us % previous 120us 
+set_frame_number = 1800;
+Tc = 90e-6; %us % previous 120us 
 fft_Rang = 134; % 134=>128
 fft_Vel = 256;
 fft_Ang = 128;
@@ -50,7 +47,7 @@ Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
 num_stored_figs = set_frame_number;% the number of figures that are going to be stored
 
 %% file information
-capture_date_list = ["2019_04_09"];
+capture_date_list = ["2019_11_27"];
 
 for ida = 1:length(capture_date_list)
 capture_date = capture_date_list(ida);
@@ -58,24 +55,24 @@ folder_location = strcat('/mnt/nas_crdataset/', capture_date, '/');
 files = dir(folder_location); % find all the files under the folder
 n_files = length(files);
 
-processed_files = [3:n_files]
+% processed_files = [3:n_files]
+processed_files = [4, 6, 22]
 
-if contains(capture_date, '04_09')
-    processed_files = [3:14,18] %0409
-elseif contains(capture_date, '04_30')
-    processed_files = [3:7,9:14,16:21] %0430
-elseif contains(capture_date, '05_09')
-    processed_files = [3:5,7:16] %0509
-else
-    processed_files = [3:n_files] %0529,0529,0523
-end
+% if contains(capture_date, '04_09')
+%     processed_files = [3:14,18] %0409
+% elseif contains(capture_date, '04_30')
+%     processed_files = [3:7,9:14,16:21] %0430
+% elseif contains(capture_date, '05_09')
+%     processed_files = [3:5,7:16] %0509
+% else
+%     processed_files = [3:n_files] %0529,0529,0523
+% end
 
 for index = 1:length(processed_files)
     inum = processed_files(index);
     file_name = files(inum).name;
     % generate file name and folder
-    file_location = strcat(folder_location,file_name,'/rad_reo_zerf/');
-%     file_location = strcat(folder_location,file_name,'/rad_reo_zerf_h/');
+    file_location = strcat(folder_location,file_name,'/rad_reo_zerf_h/');
     for ign = 1:1
         if option == 0 && Is_Windowed == 0
             saved_folder_name = strcat(folder_location,file_name, ...
@@ -117,6 +114,9 @@ for index = 1:length(processed_files)
     else
     end
     
+    caliDcRange_odd = [];
+    caliDcRange_even = [];
+    
     for i = frame_start:frame_end
         % reshape data of each frame to the format [samples, Rx, chirp]
         data_frame = data(:,(i-1)*data_each_frame+1:i*data_each_frame);
@@ -136,15 +136,15 @@ for index = 1:length(processed_files)
             % Range FFT
             [Rangedata_odd] = fft_range(chirp_odd,fft_Rang,Is_Windowed);
             
-            % Check whether to plot range-doppler heatmap
-            if IS_Plot_RD
-                % Doppler FFT
-                [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel,Is_Windowed);
-                % plot range-doppler
-                plot_rangeDop(Dopdata_odd,vel_grid,rng_grid)
-            else
+%             % Check whether to plot range-doppler heatmap
+%             if IS_Plot_RD
+%                 % Doppler FFT
+%                 [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel,Is_Windowed);
+%                 % plot range-doppler
+%                 plot_rangeDop(Dopdata_odd,vel_grid,rng_grid)
+%             else
                 
-            end
+%             end
             
             % FOR CHIRP 2
             % Range FFT
@@ -177,7 +177,6 @@ for index = 1:length(processed_files)
                 end
             end
             i % print index i
-        elseif option == 1
           
         else
             

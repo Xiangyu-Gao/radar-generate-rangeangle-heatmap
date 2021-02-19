@@ -47,26 +47,30 @@ dop_grid = fftshiftfreqgrid(fft_Vel,1/Tc); % now fs is equal to 1/Tc
 vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs],
                                 % dopgrid = [-fs/2,fs/2]
 
-capture_date_list = ["2019_04_09", "2019_04_30", "2019_05_09", "2019_05_29"];
-% capture_date_list = ["2019_04_30"];
+% capture_date_list = ["2019_04_09", "2019_04_30", "2019_05_09", ...
+%     "2019_05_23", "2019_05_28", "2019_05_29"];
+capture_date_list = ["2019_09_18"];
 
 for ida = 1:length(capture_date_list)
     capture_date = capture_date_list(ida);
     folder_location_data = strcat('/mnt/nas_crdataset/',capture_date, '/');
-    folder_location_detect = strcat('/mnt/nas_crdataset/', capture_date, '/');
-    folder_location_saveddata = strcat('/media/admin-cmmb/b746418b-1701-4336-b797-c64a6af72d56/Croped_Data/', ...
+    folder_location_detect = strcat('/home/admin-cmmb/Documents/det/', capture_date, '/');
+    folder_location_saveddata = strcat('/mnt/disk1/Croped_Data/', ...
         capture_date,'/');
-    folder_location_savedimage = strcat('/media/admin-cmmb/b746418b-1701-4336-b797-c64a6af72d56/Croped_Data_Image/', ...
+    folder_location_savedimage = strcat('/mnt/disk1/Croped_Data_Image/', ...
         capture_date,'/');
     files = dir(folder_location_data); % find all the files under the folder
     n_files = length(files);
+    inum_list = [50];
     
-    for inum = 15:n_files
+    
+    for inm = 1:3
+        inum = inum_list(inm);
         file_name = files(inum).name;
         
         % generate file name and folder
         file_location_data = strcat(folder_location_data, file_name,'/WIN_PROC_MAT_DATA/');
-        file_location_detect = strcat(folder_location_detect, file_name, '/ramap_labels.csv');
+        file_location_detect = strcat(folder_location_detect, file_name, '.txt');
         file_location_saveddata = strcat(folder_location_saveddata, ...
             file_name,'/');
         file_location_savedimage = strcat(folder_location_savedimage, ...
@@ -80,16 +84,13 @@ for ida = 1:length(capture_date_list)
             
         frames = dir(file_location_data);
         
-        %% Read Camera Results
-        Radar_label = readtable(file_location_detect);
-        frame_index_arr = string(Radar_label.filename);
-        xy_label = string(Radar_label.region_shape_attributes);
-        class_label = string(Radar_label.region_attributes);
+        %% Read det Results
+        Radar_label = readmatrix(file_location_detect);
         
         for ifa = 3:length(frames)-crop_frame+1
             frame_name = frames(ifa).name;
-            frame_index = str2num(frame_name(20:25));
-            frame_index_inlabel = find(contains(frame_index_arr,frame_name(20:25)));
+            frame_index = str2num(frame_name(20:25))+1;
+            frame_index_inlabel = find(Radar_label(:,1) == frame_index);
             
             %% Read Radar data
             if ifa == 3
@@ -115,67 +116,15 @@ for ida = 1:length(capture_date_list)
             end
            
             %% read_label
+            IF_SKIP = 0
             for ila = 1:length(frame_index_inlabel)
-                IF_SKIP = 0; % skip the noise env
                 % read range+angle
-                la = frame_index_inlabel(ila);
-                all_info_str = strsplit(xy_label(la,1), ':');
-                if xy_label(la,1)=='{}'
-                    % skip
-                    IF_SKIP = 1;
-                else
-                    if all_info_str(1) == '{"name"'
-                        if contains(all_info_str(2),'cy')
-                            parse_py = strsplit(all_info_str(3), ',"cx"');
-                            parse_px = strsplit(all_info_str(4), '}');
-                            py = str2num(parse_py(1));
-                            px = str2num(parse_px(1));
-                    
-                        elseif  contains(all_info_str(2),'cx')
-                            parse_px = strsplit(all_info_str(3), ',"cy"');
-                            parse_py = strsplit(all_info_str(4), '}');
-                            py = str2num(parse_py(1));
-                            px = str2num(parse_px(1));
-                        else
-                        end
-
-                    elseif all_info_str(1) == '{"cy"'
-                        parse_py = strsplit(all_info_str(2), ',"cx"');
-                        parse_px = strsplit(all_info_str(3), ',"name"');
-                        py = str2num(parse_py(1));
-                        px = str2num(parse_px(1));
-                    
-                    end
-                    % mapping
-                    pang = px-60;
-                    pran = rng_grid(122-py);
-                    [~, pang_idx] = min(abs(agl_grid-pang));
-                    [~, pran_idx] = min(abs(new_rng_grid-pran));
-                end
-                
-                % read class
-                if class_label(la,1) == '{}'
-                    % skip
-                    IF_SKIP = 1;
-                else
-                    parse_clas1 = strsplit(class_label(la,1), '{"class":"');
-                    parse_clas2 = strsplit(parse_clas1(2), '"}');
-                    obj_class = parse_clas2(1);
-                    if obj_class == 'pedestrian'
-                        colorid = 0; %'red'
-                    elseif obj_class == 'car'
-                        colorid = 1; %'w'
-                    elseif obj_class == 'cyclist'  
-                        colorid = 2; %'black'
-                    elseif obj_class == 'noise'  
-                        IF_SKIP = 1;
-                    else
-                        IF_SKIP = 1;
-                    end
-                end
-                
-            
-            
+                label_index = frame_index_inlabel(ila);
+                pran_idx = Radar_label(label_index,2)
+                pang_idx = Radar_label(label_index,3)
+                obj_class = Radar_label(label_index,4)
+                colorid = 1; %'w'
+                        
             %% plot the boudning box of cutting area
                 if ila == 1 
                 eval(['[axh] = plot_rangeAng(Angdata_', num2str(start_index), ...
@@ -208,8 +157,8 @@ for ida = 1:length(capture_date_list)
                 if IS_SAVE_Data && ~IF_SKIP
                 saved_data = [];
                 saved_chunk_name = strcat(file_name, '_', ...
-                    num2str(frame_index,'%06d'), '_', obj_class, ...
-                    '_', num2str(la, '%2d'), '.mat');
+                    num2str(frame_index,'%06d'), '_', num2str(obj_class), ...
+                    '_', num2str(ila, '%2d'), '.mat');
                 saved_chunk_location = strcat(file_location_saveddata, ...
                     saved_chunk_name);
                 save_sequence = mod([start_index:start_index+crop_frame-1],crop_frame);
@@ -235,11 +184,12 @@ for ida = 1:length(capture_date_list)
             end
 
 
+
             %% save the heatmap image with all boudning boxes
             if IS_SAVE_Data & IF_HAS_PLOT
                 saved_image_name = strcat(file_location_savedimage, ...
-                    file_name, '_',num2str(frame_index,'%06d'),'.png');
-                saveas(axh,saved_image_name,'png');
+                    file_name, '_',num2str(frame_index,'%06d'),'.jpg');
+                saveas(axh,saved_image_name,'jpg');
                 close
             else
             end

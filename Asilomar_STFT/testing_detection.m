@@ -14,15 +14,16 @@ Fs = 4*10^6;
 sweepSlope = 21.0017e12;
 samples = 128;
 loop = 255;
-set_frame_number = 900;
+set_frame_number = 900; % 900
 Tc = 120e-6; % us
+% Tc = 90e-6; % us
 fft_Rang = 134;
 fft_Vel = 256;
 fft_Ang = 128;
 num_crop = 3;
 max_value = 1e+04; % data WITH 1843
 
-Pfa = 1e-5;
+Pfa = 1e-4;
 
 % Creat grid table
 freq_res = Fs/fft_Rang;% range_grid
@@ -32,6 +33,8 @@ rng_grid = rng_grid(4:fft_Rang-3); % crop rag_grid
 
 w = linspace(-1,1,fft_Ang); % angle_grid
 agl_grid = asin(w)*180/pi; % [-1,1]->[-pi/2,pi/2]
+agl_err = abs(agl_grid(1:fft_Ang/2) - agl_grid(2:fft_Ang/2 +1))/2;
+agl_err = [agl_err, flip(agl_err)];
 
 dop_grid = fftshiftfreqgrid(fft_Vel,1/Tc); % velocity_grid, now fs is equal to 1/Tc
 vel_grid = dop_grid*lambda/2;   % unit: m/s, v = lamda/4*[-fs,fs], dopgrid = [-fs/2,fs/2]
@@ -44,12 +47,12 @@ option = 0; % option=0,only plot ang-range; option=1,
 % option=2,only record raw data in format of matrix; option=3,ran+dop+angle estimate;
 IS_Plot_RD = 0; % 1 ==> plot the Range-Doppler heatmap
 IS_SAVE_Data = 1;% 1 ==> save range-angle data and heatmap figure
-Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
+Is_Det_Static = 0;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
 num_stored_figs = set_frame_number;% the number of figures that are going to be stored
 
 %% file information
-capture_date_list = ["2019_05_23", "2019_05_28", "2019_05_29"];
+capture_date_list = ["2019_09_29"];
 
 for ida = 1:length(capture_date_list)
     capture_date = capture_date_list(ida);
@@ -57,23 +60,17 @@ for ida = 1:length(capture_date_list)
     files = dir(folder_location); % find all the files under the folder
     n_files = length(files);
     
-    processed_files = [3:n_files]
-    
-%     if contains(capture_date, '04_09')
-%         processed_files = [3:14,18] %0409
-%     elseif contains(capture_date, '04_30')
-%         processed_files = [3:7,9:14,16:21] %0430
-%     elseif contains(capture_date, '05_09')
-%         processed_files = [3:5,7:16] %0509
-%     else
-%         processed_files = [3:n_files] %0529,0529,0523
-%     end
+%     processed_files = [3:n_files]
+    processed_files = [22]
+%     processed_files = [3:7, 13:15]
+%     processed_files = [8:12, 16:n_files]
+%     processed_files = [21]
     
     for index = 1:length(processed_files)
         inum = processed_files(index);
         file_name = files(inum).name;
         % generate file name and folder
-        file_location = strcat(folder_location,file_name,'/rad_reo_zerf/');
+        file_location = strcat(folder_location,file_name,'/rad_reo_zerf_h/');
         
         %% read the data file
         data = readDCA1000(file_location, samples);
@@ -95,8 +92,6 @@ for ida = 1:length(capture_date_list)
             frame_end = Frame_num;
         else
         end
-        
-        
         
         for i = frame_start:frame_end
             x_dop = [];
@@ -123,14 +118,17 @@ for ida = 1:length(capture_date_list)
                 % Range FFT
                 [Rangedata_even] = fft_range(chirp_even,fft_Rang,Is_Windowed);
                 
-                % Check whether to plot range-doppler heatmap
-                % Velocity FFT
+                % Remove the static component if needed
+                if Is_Det_Static == 0
+                    Rangedata_odd = Rangedata_odd - mean(Rangedata_odd, 3);
+                    Rangedata_even = Rangedata_even - mean(Rangedata_even, 3);
+                end
                 
                 % Doppler FFT
                 [Dopdata_odd] = fft_doppler(Rangedata_odd,fft_Vel,Is_Windowed);
                 [Dopdata_even] = fft_doppler(Rangedata_even,fft_Vel,Is_Windowed);
-                %                     % plot range-doppler image
-                %                     plot_rangeDop(Dopdata_odd,vel_grid,rng_grid)
+%                 % plot range-doppler image
+%                 plot_rangeDop(Dopdata_odd,vel_grid,rng_grid)
                 
                 
                 % sum up the amplitude of all RV heatmaps
@@ -147,12 +145,16 @@ for ida = 1:length(capture_date_list)
                 end
                 
                 % make unique
-                [C,~,~] = unique(x_dop(1,:));
+                if isempty(x_dop) == 1
+                    continue
+                else
+                    [C,~,~] = unique(x_dop(1,:));
+                end
                 
                 % CFAR for each specific doppler bin
                 for dopi = 1:size(C,2)
                     y_detected = cfar_ca1D_square(Dopdata_sum(:,C(1,dopi)), ...
-                        4,4,Pfa,0);
+                        4,8,Pfa,0);
                     if isempty(y_detected) ~= 1
                         Resl_indx_temp = [C(1,dopi)*ones(1,size(y_detected,2)); ...
                             y_detected];
@@ -160,7 +162,6 @@ for ida = 1:length(capture_date_list)
                         % 4th estimated noise
                         Resl_indx = [Resl_indx,Resl_indx_temp];
                     else
-                        
                     end
                 end
                 
@@ -173,9 +174,9 @@ for ida = 1:length(capture_date_list)
                 end
                 
                 if isempty(Resl_indx) ~= 1
-                    
                     % peak grouping in Range-Velocity domain
                     [new_detect] = peakGrouping(Resl_indx);
+%                     new_detect = Resl_indx;
                     
                     % Angle FFT
                     Dopdata_merge = [Dopdata_odd, Dopdata_even];
@@ -183,8 +184,7 @@ for ida = 1:length(capture_date_list)
                         new_ran_idx = new_detect(2,di);
                         new_dop_idx = new_detect(1,di);
                         Angdata = fft_angle(Dopdata_merge(new_ran_idx,:, ...
-                            new_dop_idx),...
-                            64,Is_Windowed);
+                            new_dop_idx), fft_Ang, Is_Windowed);
                         [~, agl_index] = max(Angdata);
                         new_detect(4,di) = agl_index; % Angle index
                     end
@@ -194,19 +194,22 @@ for ida = 1:length(capture_date_list)
                     [nnew_detect] = peakGrouping(new_detect);
                     % permute back
                     nnew_detect([1 4],:) = nnew_detect([4 1],:);
+
                     % Angle FFT again
                     for di = 1:size(nnew_detect,2)
                         new_ran_idx = nnew_detect(2,di);
                         new_dop_idx = nnew_detect(1,di);
                         Angdata = fft_angle(Dopdata_merge(new_ran_idx,:, ...
-                            new_dop_idx), ...
-                            fft_Ang,Is_Windowed);
+                            new_dop_idx), fft_Ang, Is_Windowed);
                         [~, agl_index] = max(Angdata);
                         nnew_detect(4,di) = agl_index; % Angle index
                     end
                     
+
                     % permute again
+%                     nnew_detect = new_detect;
                     nnew_detect([3 4],:) = nnew_detect([4 3],:);
+                    
                     
                     if IS_SAVE_Data
                         txt_name = strcat(file_name, '.txt');
@@ -220,8 +223,6 @@ for ida = 1:length(capture_date_list)
                     end
                 end
                 i % print index i
-            else
-                
             end
         end
         clear data

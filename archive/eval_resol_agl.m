@@ -14,7 +14,7 @@ Fs = 4*10^6;
 sweepSlope = 21.0017e12;
 samples = 128;
 loop = 255;
-set_frame_number = 20;
+set_frame_number = 10;
 Tc = 90e-6; %us % previous 120us
 fft_Rang = 134; % 134=>128
 fft_Vel = 256;
@@ -45,10 +45,10 @@ IS_SAVE_Data = 0;% 1 ==> save range-angle data and heatmap figure
 Is_Det_Static = 1;% 1==> detection includes static objects (!!! MUST BE 1 WHEN OPYION = 1)
 Is_Windowed = 1;% 1==> Windowing before doing range and angle fft
 num_stored_figs = set_frame_number;% the number of figures that are going to be stored
-
+Is_Plot_Aglprof = 1; %1==> Ploting the angle profile at the maximum reflection range
 %% file information
 % generate file name and folder
-file_location = '/home/admin-cmmb/Documents/test';
+file_location = '/home/admin-cmmb/Documents/MATLAB/radar-generate-rangeangle-heatmap/test_data';
 
 
 
@@ -120,18 +120,29 @@ for i = frame_start:5
             
         end
         
-
         
         % Angle FFT
         % need to do doppler compensation on Rangedata_chirp2 in future
         Rangedata_merge = [Rangedata_odd, Rangedata_even];
+%         Rangedata_merge = Rangedata_odd;
         Angdata = fft_angle(Rangedata_merge,fft_Ang,Is_Windowed);
         Angdata_crop = Angdata(num_crop + 1:fft_Rang - num_crop,:,:);
         [Angdata_crop] = Normalize(Angdata_crop, max_value);
         
         if i < frame_start + num_stored_figs % plot Range_Angle heatmap
             [axh] = plot_rangeAng(Angdata_crop, ...
-                rng_grid(num_crop + 1:fft_Rang - num_crop),agl_grid);
+                rng_grid(num_crop + 1:fft_Rang - num_crop), agl_grid);
+        end
+        
+        if Is_Plot_Aglprof
+            % find the maximum reflection range
+            [maxv, maxI] = max(sum(abs(Rangedata_odd), [2,3]));
+            figure()
+            plot(agl_grid, mean(abs(Angdata_crop(maxI-3, :, :)), 3));
+            xlabel('Angle of arrive(degrees)')
+            ylabel('Amplitude')
+            axis([-60 60 0 1.2]);
+            title('Azimuth Profile')
         end
         
         if IS_SAVE_Data
